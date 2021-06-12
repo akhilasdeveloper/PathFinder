@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    tools:context=".MainActivity"
+    android:background="@color/dark">
+
+    <com.google.android.material.appbar.AppBarLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:elevation="0dp"
+        android:theme="@style/ThemeOverlay.MaterialComponents.Dark.ActionBar">
+        <androidx.appcompat.widget.Toolbar
+            android:layout_width="match_parent"
+            android:layout_height="?android:attr/actionBarSize"
+            android:id="@+id/tool_bar"
+            android:background="@color/dark"
+            android:elevation="0dp"
+            android:theme="@style/ThemeOverlay.MaterialComponents.Dark.ActionBar"/>
+    </com.google.android.material.appbar.AppBarLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_marginTop="?android:attr/actionBarSize"
+        android:id="@+id/main_activity"
+        android:orientation="vertical"/>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="400dp"
+        android:orientation="vertical"
+        app:layout_behavior="com.google.android.material.bottomsheet.BottomSheetBehavior"
+        app:behavior_peekHeight="0dp"
+        app:behavior_hideable="true"
+        android:background="@color/white"
+        android:id="@+id/bottom_sheet"
+        android:padding="10dp">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Node size"
+            android:textColor="@color/black"/>
+
+        <com.google.android.material.slider.Slider
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:valueFrom="30"
+            android:valueTo="100"
+            android:stepSize="1"
+            android:id="@+id/node_slide"/>
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Line size"
+            android:textColor="@color/black"/>
+
+        <com.google.android.material.slider.Slider
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:valueFrom="1"
+            android:valueTo="10"
+            android:stepSize="1"
+            android:id="@+id/line_slide"/>
+
+        <com.google.android.material.switchmaterial.SwitchMaterial
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:id="@+id/enable_edit"
+            android:text="Remove Node mode"/>
+
+        <RadioGroup
+            android:id="@+id/radioGroup"
+            android:checkedButton="@+id/radio_button_1"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+            <RadioButton
+                android:id="@+id/blockers"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:text="blockers"/>
+            <RadioButton
+                android:id="@+id/start"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:text="start"/>
+            <RadioButton
+                android:id="@+id/end"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:text="end"/>
+        </RadioGroup>
+
+    </LinearLayout>
+    <!--<androidx.recyclerview.widget.RecyclerView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/grid"
+        android:nestedScrollingEnabled="true"/>-->
+
+</androidx.coordinatorlayout.widget.CoordinatorLayout>

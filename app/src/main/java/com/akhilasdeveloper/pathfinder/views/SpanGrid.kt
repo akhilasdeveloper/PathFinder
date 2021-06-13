@@ -7,8 +7,9 @@ import android.graphics.Paint
 import android.util.Log
 import android.view.MotionEvent
 import android.view.View
-import com.akhilasdeveloper.pathfinder.models.Node
-import com.akhilasdeveloper.pathfinder.views.Keys.BLOCK
+import com.akhilasdeveloper.pathfinder.models.Line
+import com.akhilasdeveloper.pathfinder.models.Point
+import com.akhilasdeveloper.pathfinder.models.Square
 import com.akhilasdeveloper.pathfinder.views.Keys.EMPTY
 import com.akhilasdeveloper.pathfinder.views.Keys.END
 import com.akhilasdeveloper.pathfinder.views.Keys.START
@@ -18,43 +19,83 @@ class SpanGrid(context: Context?) : View(context) {
 
     private val paint = Paint()
     var mListener: OnNodeSelectListener? = null
-    private val colors = intArrayOf(Color.DKGRAY, Color.RED, Color.BLUE, Color.YELLOW, Color.rgb(255,170,0))
+    private val colors = intArrayOf(Color.DKGRAY, Color.RED, Color.BLUE, Color.YELLOW, Color.rgb(255,170,0),Color.WHITE)
     private var scale = 30
     private var marginV = 1
     var widthS = 0
     var heightS = 0
-
-    var data:MutableSet<Node> = mutableSetOf()
+    var startPont:Point? = null
+    var endPont:Point? = null
+    var drawLines = mutableListOf<Line>()
+    var drawSquares = mutableListOf<Square>()
 
     fun init(){
         setSize()
-    }
-
-    fun setDatas(data:MutableSet<Node>){
-            synchronized(this.data) {
-                val threadSet: MutableSet<Node> = mutableSetOf()
-                threadSet.addAll(data)
-                this.data = threadSet
-            }
-            postInvalidate()
-
+        postInvalidate()
     }
 
     private fun setSize(){
         widthS = (width - marginV) / (scale + marginV)
         heightS = (height - marginV) / (scale + marginV)
-        postInvalidate()
+        initSquares()
+        initLines()
+    }
+
+    private fun initSquares() {
+        drawSquares.clear()
+        for (y in 0 until heightS)
+            for (x in 0 until widthS){
+                val xs = getViewFactor(x.toFloat())
+                val ys = getViewFactor(y.toFloat())
+                drawSquares.add(Square(xs, ys, xs + scale, ys + scale))
+            }
+    }
+
+    private fun initLines(){
+        drawLines.clear()
+        var xx = 0f
+        var yy = 0f
+        for (x in 0..widthS) {
+            for (y in 0..heightS) {
+                drawLines.add(Line(xx, yy, xx + width - 1, yy))
+                yy += marginV + scale.toFloat()
+            }
+            yy = 0f
+            drawLines.add(Line(xx, yy, xx, yy + height - 1))
+            xx += marginV + scale.toFloat()
+        }
     }
 
     fun setScale(scale: Int) {
+        val backup = drawSquares.toTypedArray()
+        val widths = widthS
         this.scale = scale
         setSize()
+        restoreData(backup,widths)
         postInvalidate()
     }
 
+    private fun restoreData(backup: Array<Square>, widths: Int) {
+        startPont = null
+        endPont = null
+        for((j, i) in backup.withIndex()){
+            val xx = j%widths
+            val yy = j/widths
+            val p = xx + yy * widthS
+            if (p < drawSquares.size) {
+                drawSquares[p].type = i.type
+                if (i.type == START) startPont = Point(xx,yy)
+                if (i.type == END) endPont = Point(xx,yy)
+            }
+        }
+    }
+
     fun setMargin(margin: Int) {
+        val backup = drawSquares.toTypedArray()
+        val widths = widthS
         this.marginV = margin
         setSize()
+        restoreData(backup,widths)
         postInvalidate()
     }
 
@@ -72,51 +113,52 @@ class SpanGrid(context: Context?) : View(context) {
         return true
     }
 
-    fun addNode(px: Node){
-        removeStartNode(px)
-        removeEndNode(px)
-        data.add(px.apply { type = BLOCK })
-        postInvalidate()
+    fun setRect(px: Point, type: Int){
+
+        if (px.x < widthS && px.y < heightS && px.x >= 0 && px.y >= 0) {
+
+            drawSquares[px.x + px.y * widthS].type = type
+            postInvalidate()
+
+            if (px == startPont)
+                startPont = null
+            if (px == endPont)
+                endPont = null
+        }
     }
 
-    fun addStartNode(px: Node){
-        deleteNode(px)
-        removeEndNode(px)
-        data.filter { it.type == START }.forEach { data.remove(it) }
-        data.add(px.apply { type = START })
-        postInvalidate()
+    fun setStart(px: Point){
+        if (px.x < widthS && px.y < heightS) {
+            startPont?.let {
+                if (it != px) {
+                    drawSquares[it.x + it.y * widthS].type = EMPTY
+                    startPont = null
+                }
+            }
+            startPont = px
+            drawSquares[px.x + px.y * widthS].type = START
+            postInvalidate()
+        }
     }
 
-    fun addEndNode(px: Node){
-        deleteNode(px)
-        removeStartNode(px)
-        data.filter { it.type == END }.forEach { data.remove(it) }
-        data.add(px.apply { type = END })
-        postInvalidate()
+    fun setEnd(px: Point){
+        if (px.x < widthS && px.y < heightS) {
+            endPont?.let {
+                if (it != px) {
+                    drawSquares[it.x + it.y * widthS].type = EMPTY
+                    endPont = null
+                }
+            }
+            endPont = px
+            drawSquares[px.x + px.y * widthS].type = END
+            postInvalidate()
+        }
     }
 
-    fun deleteNode(px: Node){
-        data.remove( px.apply { type = BLOCK } )
-        postInvalidate()
-    }
-
-    fun removeStartNode(px: Node){
-        data.remove( px.apply { type = START } )
-        postInvalidate()
-    }
-
-    fun removeEndNode(px: Node){
-        data.remove( px.apply { type = END } )
-        postInvalidate()
-    }
-
-    private fun getPixelDetails(x: Int, y: Int): Node {
+    private fun getPixelDetails(x: Int, y: Int): Point {
         val sx = (x / (scale + marginV))
         val sy = (y / (scale + marginV))
-        return Node(
-            x = sx,
-            y = sy
-        )
+        return Point(sx,sy)
     }
 
     private fun getViewFactor(c: Float) = (c * (scale + marginV)) + if(marginV == 1) 1 else (marginV / 2)
@@ -126,32 +168,16 @@ class SpanGrid(context: Context?) : View(context) {
             drawColor(Color.WHITE)
             paint.color = Color.LTGRAY
             paint.strokeWidth = marginV.toFloat()
-            var xx = 0f
-            var yy = 0f
-            for (x in 0..widthS) {
-                for (y in 0..heightS) {
-                    drawLine(xx, yy, xx + width - 1, yy, paint)
-                    yy += marginV + scale.toFloat()
-                }
-                yy = 0f
-                drawLine(xx, yy, xx, yy + height - 1, paint)
-                xx += marginV + scale.toFloat()
-            }
 
-            synchronized(data){
-                for ( it in data){
-                    if (it.type != EMPTY) {
-                        paint.color = colors[it.type]
-                        val xs = getViewFactor(it.x.toFloat())
-                        val ys = getViewFactor(it.y.toFloat())
-                        drawRect(xs, ys, xs + scale, ys + scale, paint)
-                        Log.d("SpanGrid : forEach", "$xs:$ys:${xs + scale}:${ys + scale}")
-                        paint.color = Color.BLACK
-                        paint.textSize = 25f
-                        drawText("${it.distance} ${it.previousNode?.x}:${it.previousNode?.y}",xs , ys + (scale/2),paint)
-                        drawText("cur ${it.x}:${it.y}",xs , ys + (scale/2) + 25f,paint)
-                    }
-                }
+            for (line in drawLines)
+                drawLine(line.x1,line.y1,line.x2,line.y2, paint)
+
+            for (p in drawSquares) {
+                paint.color = colors[p.type]
+                drawRect(p.x1, p.y1, p.x2, p.y2, paint)
+                /*paint.color = Color.BLACK
+                paint.textSize = 35f
+                drawText("${p.distance} ",p.x1 , p.y1 + (scale/2),paint)*/
             }
 
         }

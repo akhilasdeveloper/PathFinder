@@ -1,7 +1,7 @@
 package com.akhilasdeveloper.pathfinder.views
 
-import com.akhilasdeveloper.pathfinder.models.Node
+import com.akhilasdeveloper.pathfinder.models.Point
 
 interface OnNodeSelectListener {
-   fun onEvent(node: Node)
+   fun onEvent(px: Point)
 }

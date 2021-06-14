@@ -8,10 +8,18 @@
     tools:context=".MainActivity"
     android:background="@color/dark">
 
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_marginBottom="?android:attr/actionBarSize"
+        android:id="@+id/main_activity"
+        android:orientation="vertical"/>
+
     <com.google.android.material.appbar.AppBarLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         app:elevation="0dp"
+        android:layout_gravity="bottom"
         android:theme="@style/ThemeOverlay.MaterialComponents.Dark.ActionBar">
         <androidx.appcompat.widget.Toolbar
             android:layout_width="match_parent"
@@ -22,12 +30,13 @@
             android:theme="@style/ThemeOverlay.MaterialComponents.Dark.ActionBar"/>
     </com.google.android.material.appbar.AppBarLayout>
 
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:layout_marginTop="?android:attr/actionBarSize"
-        android:id="@+id/main_activity"
-        android:orientation="vertical"/>
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|end"
+        android:layout_margin="20dp"
+        android:visibility="gone"
+        android:id="@+id/next"/>
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -36,7 +45,7 @@
         app:layout_behavior="com.google.android.material.bottomsheet.BottomSheetBehavior"
         app:behavior_peekHeight="0dp"
         app:behavior_hideable="true"
-        android:background="@color/white"
+        android:background="@color/dark"
         android:id="@+id/bottom_sheet"
         android:padding="10dp">
 
@@ -44,12 +53,12 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="Node size"
-            android:textColor="@color/black"/>
+            android:textColor="@color/white"/>
 
         <com.google.android.material.slider.Slider
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:valueFrom="30"
+            android:valueFrom="1"
             android:valueTo="100"
             android:stepSize="1"
             android:id="@+id/node_slide"/>
@@ -58,7 +67,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="Line size"
-            android:textColor="@color/black"/>
+            android:textColor="@color/white"/>
 
         <com.google.android.material.slider.Slider
             android:layout_width="match_parent"
@@ -68,10 +77,25 @@
             android:stepSize="1"
             android:id="@+id/line_slide"/>
 
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Speed"
+            android:textColor="@color/white"/>
+
+        <com.google.android.material.slider.Slider
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:valueFrom="0"
+            android:valueTo="20"
+            android:stepSize="2"
+            android:id="@+id/speed_slide"/>
+
         <com.google.android.material.switchmaterial.SwitchMaterial
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:id="@+id/enable_edit"
+            android:textColor="@color/white"
             android:text="Remove Node mode"/>
 
         <RadioGroup
@@ -81,16 +105,19 @@
             android:layout_height="wrap_content">
             <RadioButton
                 android:id="@+id/blockers"
+                android:textColor="@color/white"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:text="blockers"/>
             <RadioButton
                 android:id="@+id/start"
+                android:textColor="@color/white"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:text="start"/>
             <RadioButton
                 android:id="@+id/end"
+                android:textColor="@color/white"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:text="end"/>

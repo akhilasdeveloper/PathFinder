@@ -20,6 +20,7 @@ import com.akhilasdeveloper.pathfinder.views.OnNodeSelectListener
 import com.akhilasdeveloper.pathfinder.views.SpanGrid
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import kotlinx.coroutines.*
+import kotlin.math.floor
 import kotlin.random.Random
 import kotlin.random.nextInt
 
@@ -28,7 +29,10 @@ class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
     private lateinit var bottomSheetBehavior: BottomSheetBehavior<LinearLayout>
     internal lateinit var spanGrid: SpanGrid
+    private var dataGrid: List<Square>? = null
     internal var data: List<Square>? = null
+    private var gaps = mutableListOf<Point>()
+    internal var sleepVal = 0L
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -48,6 +52,9 @@ class MainActivity : AppCompatActivity() {
         }
         binding.nodeSlide.addOnChangeListener { _, value, _ ->
             spanGrid.setScale(value.toInt())
+        }
+        binding.speedSlide.addOnChangeListener { _, value, _ ->
+            sleepVal = value.toLong()
         }
 
         spanGrid.setNodeSelectListener(object : OnNodeSelectListener {
@@ -84,10 +91,14 @@ class MainActivity : AppCompatActivity() {
                     bottomSheetBehavior.state = BottomSheetBehavior.STATE_EXPANDED
                 true
             }
+            R.id.grid -> {
+                dataGrid = spanGrid.drawSquares
+                generateMaze()
+                true
+            }
             R.id.play -> {
                 data = spanGrid.drawSquares
-                generateMaze()
-//                findPathDijkstra()
+                findPathDijkstra()
                 true
             }
             else -> super.onOptionsItemSelected(item)
@@ -98,94 +109,119 @@ class MainActivity : AppCompatActivity() {
 
     private fun generateMaze() {
         CoroutineScope(Dispatchers.Default).launch {
-            data?.let { data ->
+            dataGrid?.let { data ->
 
-                val gHeight = spanGrid.heightS
-                val gWidth = spanGrid.widthS
+                var gHeight = spanGrid.heightS
+                var gWidth = spanGrid.widthS
 
-                val grid: List<Square> = generateBorder(data, gWidth, gHeight)
+                gHeight = if (gHeight % 2 == 0) gHeight - 1 else gHeight
+                gWidth = if (gWidth % 2 == 0) gWidth - 1 else gWidth
 
-                recursiveMaze(0, 0, gWidth, gHeight)
-//                recursiveMaze(gWidth, gHeight, Point())
+                generateBorder(gWidth, gHeight)
+                recursiveMaze(1, 1, gWidth - 1, gHeight - 1)
             }
         }
     }
 
-    private fun generateBorder(data: List<Square>, gWidth: Int, gHeight: Int): List<Square> {
+    private fun generateBorder(gWidth: Int, gHeight: Int) {
 
         for (i in 0 until gWidth) {
-            /*data[i].type = BLOCK
-            data[i + (gHeight - 1) * gWidth].type = BLOCK*/
             spanGrid.setRect(Point(i, 0), BLOCK)
             spanGrid.setRect(Point(i, gHeight - 1), BLOCK)
         }
         for (j in 0 until gHeight) {
-            /*data[j * gWidth].type = BLOCK
-            data[(gWidth - 1) + j * gWidth].type = BLOCK*/
             spanGrid.setRect(Point(0, j), BLOCK)
             spanGrid.setRect(Point(gWidth - 1, j), BLOCK)
         }
-        return data
     }
 
-    //    private fun recursiveMaze(gWidth: Int, gHeight: Int, point:Point) {
-    private fun recursiveMaze(x: Int, y: Int, gWidth: Int, gHeight: Int) {
-        if (gWidth < 2 || gHeight < 2)
+    private fun recursiveMaze(x1: Int, y1: Int, x2: Int, y2: Int) {
+
+        if (x2 - x1 < 2 || y2 - y1 < 2)
             return
 
-        val isHorizontal = gWidth < gHeight
-        var wx = x + if (isHorizontal) 0 else (0..gWidth - 2).random()
-        var wy = y + if (isHorizontal) (0..gHeight - 2).random() else 0
+        val isHorizontal =
+            if (x2 - x1 < y2 - y1) true else if (x2 - x1 > y2 - y1) false else Random.nextBoolean()
 
-        val px = wx + if (isHorizontal) (0..gWidth).random() else 0
-        val py = wy + if (isHorizontal) 0 else (0..gHeight).random()
+        val rows = mutableListOf<Int>()
+        val cols = mutableListOf<Int>()
 
-        val dx = if (isHorizontal) 1 else 0
-        val dy = if (isHorizontal) 0 else 1
+        if (isHorizontal) {
 
-        val length = if (isHorizontal) gWidth else gHeight
+            for (i in x1 until x2 + 1 step 2)
+                rows.add(i)
 
-        for (i in 0 until length) {
-            spanGrid.setRect(Point(wx, wy), BLOCK)
-            if (wx != px || wy != py) {
-                wx += dx
-                wy += dy
+            for (i in y1 + 1 until y2 step 2)
+                cols.add(i)
+
+            val randRow = floor(Math.random() * rows.size).toInt()
+            var randCol = floor(Math.random() * cols.size).toInt()
+
+            var cutHor = cols[randCol]
+
+            while (gaps.contains(Point(x1 - 1, cutHor)) || gaps.contains(Point(x2 + 1, cutHor))) {
+                if (cols.size < 3)
+                    return
+                randCol = floor(Math.random() * cols.size).toInt()
+                cutHor = cols[randCol]
             }
+
+            drawLineHor(x1, x2, cutHor)
+
+            val gapHor = rows[randRow]
+            gaps.add(Point(gapHor, cutHor))
+            spanGrid.setRect(Point(gapHor, cutHor), EMPTY)
+
+            recursiveMaze(x1, y1, x2, cutHor - 1)
+            recursiveMaze(x1, cutHor + 1, x2, y2)
+        } else {
+
+            for (i in x1 + 1 until x2 step 2)
+                rows.add(i)
+
+            for (i in y1 until y2 + 1 step 2)
+                cols.add(i)
+
+            var randRow = floor(Math.random() * rows.size).toInt()
+            val randCol = floor(Math.random() * cols.size).toInt()
+
+            var cutVer = rows[randRow]
+
+            while (gaps.contains(Point(cutVer, y1 - 1)) || gaps.contains(Point(cutVer, y2 + 1))) {
+                if (rows.size < 3)
+                    return
+                randRow = floor(Math.random() * rows.size).toInt()
+                cutVer = rows[randRow]
+            }
+
+            drawLineVer(y1, y2, cutVer)
+
+            val gapVer = cols[randCol]
+            gaps.add(Point(cutVer, gapVer))
+            spanGrid.setRect(Point(cutVer, gapVer), EMPTY)
+
+            recursiveMaze(x1, y1, cutVer - 1, y2)
+            recursiveMaze(cutVer + 1, y1, x2, y2)
         }
+    }
 
-        var nx = x
-        var ny = y
+    private fun drawLineHor(x1: Int, x2: Int, y: Int) {
+        for (i in x1..x2) {
+            runBlocking {
+                delay(sleepVal)
+            }
+            Log.d("Output Horizontal : ", "$i , $y")
+            spanGrid.setRect(Point(i, y), BLOCK)
+        }
+    }
 
-        var w = if (isHorizontal) gWidth else wx-x+1
-        var h = if (isHorizontal) wy-y+1 else gHeight
-
-        recursiveMaze(nx, ny, w, h)
-
-        nx = if (isHorizontal) gWidth else wx+1
-        ny = if (isHorizontal) wy+1 else y
-        w = if (isHorizontal) gWidth else x+gWidth-wx-1
-        h = if (isHorizontal) y+gHeight-wy-1 else gHeight
-
-        recursiveMaze(nx, ny, w, h)
-
-        /*if (isHorizontal){
-
-            val cutHor = gHeight/2
-            for (i in 0 + point.x until gWidth + point.x)
-                spanGrid.setRect(Point(i,cutHor  + point.y), BLOCK)
-            val gapHor = gWidth / 4
-            spanGrid.setRect(Point(gapHor,cutHor), EMPTY)
-            recursiveMaze(gWidth, cutHor, point)
-            recursiveMaze(gWidth, cutHor, Point(point.x, point.y + cutHor))
-        }else{
-            val cutVer = gWidth/2
-            for (i in 0 + point.y until gHeight + point.y)
-                spanGrid.setRect(Point(cutVer  + point.x,i), BLOCK)
-            val gapVer = gHeight / 4
-            spanGrid.setRect(Point(cutVer,gapVer), EMPTY)
-            recursiveMaze(cutVer,gHeight,point)
-            recursiveMaze(cutVer,gHeight,Point(point.x+cutVer, point.y))
-        }*/
-
+    private fun drawLineVer(y1: Int, y2: Int, x: Int) {
+        for (i in y1..y2) {
+            runBlocking {
+                delay(sleepVal)
+            }
+            Log.d("Output Vertical : ", "$x , $i")
+            spanGrid.setRect(Point(x, i), BLOCK)
+        }
     }
 }

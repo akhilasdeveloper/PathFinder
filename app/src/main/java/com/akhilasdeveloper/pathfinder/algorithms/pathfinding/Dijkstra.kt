@@ -2,19 +2,19 @@ package com.akhilasdeveloper.pathfinder.algorithms.pathfinding
 
 import android.util.Log
 import com.akhilasdeveloper.pathfinder.MainActivity
+import com.akhilasdeveloper.pathfinder.algorithms.pull
+import com.akhilasdeveloper.pathfinder.algorithms.push
 import com.akhilasdeveloper.pathfinder.models.Point
 import com.akhilasdeveloper.pathfinder.models.Square
 import com.akhilasdeveloper.pathfinder.views.Keys
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.cancel
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.*
 
 private var short = 0
 
 internal fun MainActivity.findPathDijkstra() {
 
     CoroutineScope(Dispatchers.Default).launch {
+
         data?.let { data ->
 
             val gHeight = spanGrid.heightS
@@ -26,28 +26,31 @@ internal fun MainActivity.findPathDijkstra() {
 
             if (!invalidateData()) this.cancel()
 
-            val grid = data.toTypedArray()
+            data[startP].distance = 0
+            push(startP)
 
-            grid[startP].distance = 0
+            while (data.isNotEmpty()) {
 
-            while (grid.isNotEmpty()) {
+                delay(sleepVal)
 
-                val shortNode: Int = shortGridNode(grid)
-                grid[shortNode].isVisited = true
+                val shortNode: Int = pull() ?: break
+
+                data[shortNode].isVisited = true
 
                 Log.d("findPath : neighbours", "$shortNode")
 
                 if (shortNode == endP) {
                     var n: Int = shortNode
                     while (n != startP) {
-                        if (grid[n].type != Keys.START && grid[n].type != Keys.END)
+                        delay(sleepVal)
+                        if (data[n].type != Keys.START && data[n].type != Keys.END)
                             spanGrid.setRect(Point(n % gWidth, n / gWidth), Keys.PATH)
-                        n = grid[n].previous!!
+                        n = data[n].previous!!
                     }
                     break
                 } else {
-                    if (grid[shortNode].distance == Int.MAX_VALUE) break
-                    if (grid[shortNode].type != Keys.START)
+                    if (data[shortNode].distance == Int.MAX_VALUE) break
+                    if (data[shortNode].type != Keys.START)
                         spanGrid.setRect(
                             Point(shortNode % gWidth, shortNode / gWidth),
                             Keys.VISITED
@@ -55,15 +58,16 @@ internal fun MainActivity.findPathDijkstra() {
                 }
 
                 val neighbours: Array<Int> =
-                    getNeighbours(gHeight, gWidth, shortNode, grid)
+                    getNeighbours(gHeight, gWidth, shortNode, data)
 
                 neighbours.forEach {
-                    val dis = grid[shortNode].distance + 1
-                    if (dis < grid[it].distance) {
-                        grid[it].distance = dis
-                        spanGrid.drawSquares[it].distance = grid[it].distance
+                    val dis = data[shortNode].distance + 1
+                    if (dis < data[it].distance) {
+                        data[it].distance = dis
+                        spanGrid.drawSquares[it].distance = data[it].distance
+                        push(it)
                     }
-                    grid[it].previous = shortNode
+                    data[it].previous = shortNode
                 }
             }
         }
@@ -74,7 +78,7 @@ private fun getNeighbours(
     gHeight: Int,
     gWidth: Int,
     shortNode: Int,
-    grids: Array<Square>
+    grids: List<Square>
 ): Array<Int> {
 
     val xx = shortNode % gWidth
@@ -84,10 +88,14 @@ private fun getNeighbours(
     val n = mutableListOf<Int>()
     val points =
         arrayOf(
+            /*Point(xx - 1, yy - 1),
+            Point(xx + 1, yy - 1),
+            Point(xx + 1, yy + 1),
+            Point(xx - 1, yy - 1),*/
+            Point(xx - 1, yy),
             Point(xx, yy - 1),
-            Point(xx + 1, yy),
             Point(xx, yy + 1),
-            Point(xx - 1, yy))
+            Point(xx + 1, yy))
 
     points.forEach { p ->
         if (p.x in 0 until gWidth && p.y in 0 until gHeight) {
@@ -102,7 +110,7 @@ private fun getNeighbours(
     return n.toTypedArray()
 }
 
-private fun shortGridNode(grids: Array<Square>): Int {
+private fun shortGridNode(grids: List<Square>): Int {
     var index: Int? = null
 
     for ((i, j) in grids.withIndex()) {

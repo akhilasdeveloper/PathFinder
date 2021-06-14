@@ -7,6 +7,8 @@ import android.graphics.Paint
 import android.util.Log
 import android.view.MotionEvent
 import android.view.View
+import androidx.core.content.res.ResourcesCompat
+import com.akhilasdeveloper.pathfinder.R
 import com.akhilasdeveloper.pathfinder.models.Line
 import com.akhilasdeveloper.pathfinder.models.Point
 import com.akhilasdeveloper.pathfinder.models.Square
@@ -15,12 +17,17 @@ import com.akhilasdeveloper.pathfinder.views.Keys.END
 import com.akhilasdeveloper.pathfinder.views.Keys.START
 
 
-class SpanGrid(context: Context?) : View(context) {
+class SpanGrid(context: Context) : View(context) {
 
     private val paint = Paint()
     var mListener: OnNodeSelectListener? = null
-    private val colors = intArrayOf(Color.DKGRAY, Color.RED, Color.BLUE, Color.YELLOW, Color.rgb(255,170,0),Color.WHITE)
-    private var scale = 30
+    private val colors = intArrayOf(ResourcesCompat.getColor(context.resources, R.color.block, null),
+        ResourcesCompat.getColor(context.resources, R.color.start,null),
+        ResourcesCompat.getColor(context.resources, R.color.end,null),
+        ResourcesCompat.getColor(context.resources, R.color.path,null),
+        ResourcesCompat.getColor(context.resources, R.color.visited,null),
+        ResourcesCompat.getColor(context.resources, R.color.empty,null))
+    private var scale = 20
     private var marginV = 1
     var widthS = 0
     var heightS = 0
@@ -165,8 +172,8 @@ class SpanGrid(context: Context?) : View(context) {
 
     override fun onDraw(canvas: Canvas?) {
         canvas?.apply {
-            drawColor(Color.WHITE)
-            paint.color = Color.LTGRAY
+            drawColor(ResourcesCompat.getColor(context.resources, R.color.empty,null))
+            paint.color = ResourcesCompat.getColor(context.resources, R.color.line,null)
             paint.strokeWidth = marginV.toFloat()
 
             for (line in drawLines)

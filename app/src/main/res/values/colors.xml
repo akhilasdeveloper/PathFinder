@@ -8,7 +8,7 @@
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
 
-    <color name="empty">#807D8F</color>
+    <color name="empty">#D5D3DD</color>
     <color name="block">#393842</color>
     <color name="start">#fc5b2d</color>
     <color name="end">#1A8AEC</color>

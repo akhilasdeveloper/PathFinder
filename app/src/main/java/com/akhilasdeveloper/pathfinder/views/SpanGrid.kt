@@ -1,6 +1,7 @@
 package com.akhilasdeveloper.pathfinder.views
 
 import android.content.Context
+import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
@@ -15,6 +16,10 @@ import com.akhilasdeveloper.pathfinder.models.Square
 import com.akhilasdeveloper.pathfinder.views.Keys.EMPTY
 import com.akhilasdeveloper.pathfinder.views.Keys.END
 import com.akhilasdeveloper.pathfinder.views.Keys.START
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.launch
 
 
 class SpanGrid(context: Context) : View(context) {
@@ -27,21 +32,26 @@ class SpanGrid(context: Context) : View(context) {
         ResourcesCompat.getColor(context.resources, R.color.path,null),
         ResourcesCompat.getColor(context.resources, R.color.visited,null),
         ResourcesCompat.getColor(context.resources, R.color.empty,null))
-    private var scale = 20
+
+    private var scale = 10
     private var marginV = 1
     var widthS = 0
     var heightS = 0
     var startPont:Point? = null
     var endPont:Point? = null
-    var drawLines = mutableListOf<Line>()
     var drawSquares = mutableListOf<Square>()
+    var canvasB:Canvas? = null
+    var bitmap:Bitmap? = null
 
     fun init(){
+        bitmap =  Bitmap.createBitmap(width,height,Bitmap.Config.RGB_565);
+        canvasB = Canvas(bitmap!!)
         setSize()
         postInvalidate()
     }
 
     private fun setSize(){
+        clearCanvas()
         widthS = (width - marginV) / (scale + marginV)
         heightS = (height - marginV) / (scale + marginV)
         initSquares()
@@ -59,26 +69,28 @@ class SpanGrid(context: Context) : View(context) {
     }
 
     private fun initLines(){
-        drawLines.clear()
+        paint.color = ResourcesCompat.getColor(context.resources, R.color.line,null)
+        paint.strokeWidth = marginV.toFloat()
         var xx = 0f
         var yy = 0f
         for (x in 0..widthS) {
             for (y in 0..heightS) {
-                drawLines.add(Line(xx, yy, xx + width - 1, yy))
+                canvasB?.drawLine(xx,yy,xx + width - 1,yy, paint)
                 yy += marginV + scale.toFloat()
             }
             yy = 0f
-            drawLines.add(Line(xx, yy, xx, yy + height - 1))
+            canvasB?.drawLine(xx, yy, xx, yy + height - 1, paint)
             xx += marginV + scale.toFloat()
         }
+
     }
 
     fun setScale(scale: Int) {
         val backup = drawSquares.toTypedArray()
         val widths = widthS
-        this.scale = scale
+        this@SpanGrid.scale = scale
         setSize()
-        restoreData(backup,widths)
+        restoreData(backup, widths)
         postInvalidate()
     }
 
@@ -93,16 +105,27 @@ class SpanGrid(context: Context) : View(context) {
                 drawSquares[p].type = i.type
                 if (i.type == START) startPont = Point(xx,yy)
                 if (i.type == END) endPont = Point(xx,yy)
+                val pp = drawSquares[p]
+                drawRect(pp.x1,pp.y1, pp.x2, pp.y2, i.type)
             }
         }
+    }
+
+    private fun drawRect(x1:Float, y1:Float, x2:Float, y2:Float, type: Int){
+        paint.color = colors[type]
+        canvasB?.drawRect(x1,y1,x2,y2, paint)
+    }
+
+    private fun clearCanvas(){
+        canvasB?.drawColor(ResourcesCompat.getColor(context.resources, R.color.empty,null))
     }
 
     fun setMargin(margin: Int) {
         val backup = drawSquares.toTypedArray()
         val widths = widthS
-        this.marginV = margin
+        this@SpanGrid.marginV = margin
         setSize()
-        restoreData(backup,widths)
+        restoreData(backup, widths)
         postInvalidate()
     }
 
@@ -125,6 +148,8 @@ class SpanGrid(context: Context) : View(context) {
         if (px.x < widthS && px.y < heightS && px.x >= 0 && px.y >= 0) {
 
             drawSquares[px.x + px.y * widthS].type = type
+            val pp = drawSquares[px.x + px.y * widthS]
+            drawRect(pp.x1,pp.y1, pp.x2, pp.y2, type)
             postInvalidate()
 
             if (px == startPont)
@@ -140,10 +165,14 @@ class SpanGrid(context: Context) : View(context) {
                 if (it != px) {
                     drawSquares[it.x + it.y * widthS].type = EMPTY
                     startPont = null
+                    val pp = drawSquares[it.x + it.y * widthS]
+                    drawRect(pp.x1,pp.y1, pp.x2, pp.y2, EMPTY)
                 }
             }
             startPont = px
             drawSquares[px.x + px.y * widthS].type = START
+            val pp = drawSquares[px.x + px.y * widthS]
+            drawRect(pp.x1,pp.y1, pp.x2, pp.y2, START)
             postInvalidate()
         }
     }
@@ -153,11 +182,15 @@ class SpanGrid(context: Context) : View(context) {
             endPont?.let {
                 if (it != px) {
                     drawSquares[it.x + it.y * widthS].type = EMPTY
+                    val pp = drawSquares[it.x + it.y * widthS]
+                    drawRect(pp.x1,pp.y1, pp.x2, pp.y2, EMPTY)
                     endPont = null
                 }
             }
             endPont = px
             drawSquares[px.x + px.y * widthS].type = END
+            val pp = drawSquares[px.x + px.y * widthS]
+            drawRect(pp.x1,pp.y1, pp.x2, pp.y2, END)
             postInvalidate()
         }
     }
@@ -171,22 +204,8 @@ class SpanGrid(context: Context) : View(context) {
     private fun getViewFactor(c: Float) = (c * (scale + marginV)) + if(marginV == 1) 1 else (marginV / 2)
 
     override fun onDraw(canvas: Canvas?) {
-        canvas?.apply {
-            drawColor(ResourcesCompat.getColor(context.resources, R.color.empty,null))
-            paint.color = ResourcesCompat.getColor(context.resources, R.color.line,null)
-            paint.strokeWidth = marginV.toFloat()
-
-            for (line in drawLines)
-                drawLine(line.x1,line.y1,line.x2,line.y2, paint)
-
-            for (p in drawSquares) {
-                paint.color = colors[p.type]
-                drawRect(p.x1, p.y1, p.x2, p.y2, paint)
-                /*paint.color = Color.BLACK
-                paint.textSize = 35f
-                drawText("${p.distance} ",p.x1 , p.y1 + (scale/2),paint)*/
-            }
-
+        bitmap?.let {
+            canvas?.drawBitmap(it, 0f, 0f, paint)
         }
     }
 

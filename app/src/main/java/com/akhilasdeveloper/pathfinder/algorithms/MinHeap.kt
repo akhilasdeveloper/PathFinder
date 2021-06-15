@@ -2,6 +2,7 @@ package com.akhilasdeveloper.pathfinder.algorithms
 
 import com.akhilasdeveloper.pathfinder.MainActivity
 
+/*
 private val heapMin: MutableList<Int> = mutableListOf()
 
 private fun getLeftChildIndex(parentIndex: Int) = 2 * parentIndex + 1
@@ -63,3 +64,4 @@ fun MainActivity.heapifyDown() {
         }
     }
 }
+*/

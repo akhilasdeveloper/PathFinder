@@ -2,9 +2,9 @@ package com.akhilasdeveloper.pathfinder.algorithms
 
 import com.akhilasdeveloper.pathfinder.models.Square
 
-class HeapMin {
-    private val heapMin: MutableList<Int> = mutableListOf()
-    private var data: List<Square>? = null
+class HeapMinHash<T> {
+    private val heapMin: MutableList<T> = mutableListOf()
+    private var data: HashMap<T, Square> = hashMapOf()
 
     private fun getLeftChildIndex(parentIndex: Int) = 2 * parentIndex + 1
     private fun getRightChildIndex(parentIndex: Int) = 2 * parentIndex + 2
@@ -18,26 +18,29 @@ class HeapMin {
     private fun rightChild(index: Int) = heapMin[getRightChildIndex(index)]
     private fun parent(index: Int) = heapMin[getParentIndex(index)]
 
-    fun pull(data: List<Square>?):Int?{
-        this.data = data
+    fun pull(data: HashMap<T, Square>?): T? {
+        this.data = data ?: hashMapOf()
         if (heapMin.size == 0) return null
         val item = heapMin[0]
         heapMin[0] = heapMin[heapMin.size - 1]
         heapMin.removeAt(heapMin.size - 1)
-        heapifyDown()
+        heapDown()
         return item
     }
 
-    fun push(item: Int, data: List<Square>?){
-        this.data = data
+    fun push(item: T, data: HashMap<T, Square>?) {
+        this.data = data ?: hashMapOf()
         heapMin.add(item)
-        heapifyUp()
+        heapUp()
     }
 
-    private fun heapifyUp() {
-        data?.let {data->
-            var index = heapMin.size-1
-            while (hasParent(index) && data[parent(index)].distance > data[heapMin[index]].distance){
+    private fun heapUp() {
+        if (data.isNotEmpty()) {
+            var index = heapMin.size - 1
+            while (hasParent(index) &&
+                getData(parent(index)).distance >
+                getData(heapMin[index]).distance
+            ) {
                 val item = parent(index)
                 heapMin[getParentIndex(index)] = heapMin[index]
                 heapMin[index] = item
@@ -46,16 +49,21 @@ class HeapMin {
         }
     }
 
-    private fun heapifyDown() {
-        data?.let{data->
+    private fun getData(index: T) = data.getOrPut(index) { Square() }
+
+    private fun heapDown() {
+        if (data.isNotEmpty()) {
             var index = 0
-            while (hasLeftChild(index)){
+            while (hasLeftChild(index)) {
                 var smallerChildIndex = getLeftChildIndex(index)
-                if (hasRightChild(index) && data[rightChild(index)].distance < data[leftChild(index)].distance){
+                if (hasRightChild(index) && getData(rightChild(index)).distance < getData(leftChild(
+                        index
+                    )).distance
+                ) {
                     smallerChildIndex = getRightChildIndex(index)
                 }
 
-                if (data[heapMin[index]].distance < data[heapMin[smallerChildIndex]].distance)
+                if (getData(heapMin[index]).distance < getData(heapMin[smallerChildIndex]).distance)
                     break
                 else {
                     val item = heapMin[index]

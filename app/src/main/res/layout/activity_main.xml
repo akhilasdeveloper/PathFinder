@@ -5,29 +5,62 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    tools:context=".MainActivity"
-    android:background="@color/dark">
+    tools:context=".MainActivity">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:layout_marginBottom="?android:attr/actionBarSize"
-        android:id="@+id/main_activity"
+        android:id="@+id/gridViewHolder"
         android:orientation="vertical"/>
 
     <com.google.android.material.appbar.AppBarLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        app:elevation="0dp"
         android:layout_gravity="bottom"
-        android:theme="@style/ThemeOverlay.MaterialComponents.Dark.ActionBar">
-        <androidx.appcompat.widget.Toolbar
+        android:id="@+id/action_bar">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:padding="10dp"
+            android:gravity="center_vertical">
+            <!--<LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical">
+                <ImageView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:src="@drawable/ic_round_stop_24"
+                    app:tint="@color/start"/>
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Start"
+                    android:gravity="center"/>
+            </LinearLayout>-->
+
+            <Spinner
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:id="@+id/cellSelector"/>
+
+            <ImageView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:src="@drawable/ic_baseline_grid_view_24"/>
+
+        </LinearLayout>
+
+        <com.google.android.material.appbar.MaterialToolbar
             android:layout_width="match_parent"
             android:layout_height="?android:attr/actionBarSize"
             android:id="@+id/tool_bar"
-            android:background="@color/dark"
-            android:elevation="0dp"
-            android:theme="@style/ThemeOverlay.MaterialComponents.Dark.ActionBar"/>
+            app:titleTextAppearance="@style/tool_bar_title"
+            android:visibility="gone"/>
     </com.google.android.material.appbar.AppBarLayout>
 
     <com.google.android.material.floatingactionbutton.FloatingActionButton
@@ -40,14 +73,14 @@
 
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="400dp"
+        android:layout_height="500dp"
         android:orientation="vertical"
         app:layout_behavior="com.google.android.material.bottomsheet.BottomSheetBehavior"
         app:behavior_peekHeight="0dp"
         app:behavior_hideable="true"
-        android:background="@color/dark"
         android:id="@+id/bottom_sheet"
-        android:padding="10dp">
+        android:padding="10dp"
+        android:background="@color/statusBarColor">
 
         <TextView
             android:layout_width="match_parent"
@@ -96,7 +129,7 @@
             android:layout_height="wrap_content"
             android:id="@+id/enable_edit"
             android:textColor="@color/white"
-            android:text="Remove Node mode"/>
+            android:text="Eraser mode"/>
 
         <RadioGroup
             android:id="@+id/radioGroup"
@@ -108,6 +141,7 @@
                 android:textColor="@color/white"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
+                android:checked="true"
                 android:text="blockers"/>
             <RadioButton
                 android:id="@+id/start"

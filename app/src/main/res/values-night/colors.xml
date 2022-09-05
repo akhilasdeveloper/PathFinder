@@ -8,19 +8,15 @@
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
 
-    <color name="empty">#F9F6FF</color>
-    <color name="block">#0c3547</color>
+    <color name="empty">#0c3547</color>
+    <color name="block">#F9F6FF</color>
     <color name="start">#fc5b2d</color>
     <color name="end">#1A8AEC</color>
-    <color name="path">#4E9F3D</color>
-    <color name="visited">#D8E9A8</color>
-    <color name="line">#1E5128</color>
+    <color name="path">#74C5D6</color>
+    <color name="visited">#D3B772</color>
+    <color name="line">#D5D3DD</color>
 
     <color name="rippleColor">#000000</color>
-    <color name="statusBarColor">#FFFFFF</color>
-    <color name="textColor">#121212</color>
-    <color name="light_blue_400">#FF29B6F6</color>
-    <color name="light_blue_600">#FF039BE5</color>
-    <color name="gray_400">#FFBDBDBD</color>
-    <color name="gray_600">#FF757575</color>
+    <color name="statusBarColor">#121212</color>
+    <color name="textColor">#ffffff</color>
 </resources>

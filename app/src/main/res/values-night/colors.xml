@@ -10,6 +10,7 @@
 
     <color name="empty">#0c3547</color>
     <color name="block">#F9F6FF</color>
+    <color name="block1">#8A1188</color>
     <color name="start">#fc5b2d</color>
     <color name="end">#1A8AEC</color>
     <color name="path">#74C5D6</color>

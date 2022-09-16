@@ -12,6 +12,7 @@ import androidx.core.content.res.ResourcesCompat
 import com.akhilasdeveloper.pathfinder.R
 import com.akhilasdeveloper.pathfinder.models.Point
 import com.akhilasdeveloper.pathfinder.models.PointF
+import timber.log.Timber
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.math.abs
 
@@ -30,6 +31,11 @@ class SpanGrid(context: Context) : View(context) {
     var yOff = 0f
         private set
 
+    var startPoint: Point = Point(0, 0)
+        get() = getPixelDetails(PointF(0f, 0f))
+        private set
+
+    private var touchCount = 0
     var scaleEnabled = true
     var spanEnabled = true
     var lineEnabled = true
@@ -84,8 +90,10 @@ class SpanGrid(context: Context) : View(context) {
 
             if (mode == MODE_VIEW && spanEnabled) {
 
-                xOff += -(distanceX * gridWidth / width)
-                yOff += -(distanceY * gridHeight / height)
+                val fact = gridWidth / width
+
+                xOff += -distanceX * fact
+                yOff += -distanceY * fact
 
                 setGridSize()
             }
@@ -132,9 +140,26 @@ class SpanGrid(context: Context) : View(context) {
      * Change the canvas coordinates to Grid Coordinates
      */
     private fun getPixelDetails(px: PointF): Point {
-        val sx = (px.x / (resolution + lineWidth)) - xOff
-        val sy = (px.y / (resolution + lineWidth)) - yOff
+        val fact = resolution + lineWidth
+        val sx = (px.x / fact) - xOff
+        val sy = (px.y / fact) - yOff
         return Point(sx.toInt(), sy.toInt())
+    }
+
+    private fun determineViewMode(){
+        mode = if (touchCount > 1)
+            MODE_VIEW
+        else
+            MODE_DRAW
+    }
+
+    private fun setTouchCount(count: Int){
+        if (count == 0)
+            touchCount = 0
+        else
+            if (count > touchCount)
+                touchCount = count
+        determineViewMode()
     }
 
     override fun onTouchEvent(event: MotionEvent): Boolean {
@@ -143,10 +168,9 @@ class SpanGrid(context: Context) : View(context) {
         mScaleDetector.onTouchEvent(event)
         this.performClick()
 
-        mode = if (event.pointerCount > 1)
-            MODE_VIEW
-        else
-            MODE_DRAW
+        setTouchCount(event.pointerCount)
+
+        Timber.d("Touch count : ${event.pointerCount}")
 
         isTouched = true
 
@@ -154,10 +178,7 @@ class SpanGrid(context: Context) : View(context) {
 
         when (event.action) {
             MotionEvent.ACTION_DOWN -> {
-                if (mode == MODE_DRAW) {
-                    val px = getPixelDetails(pxF)
-                    mListener?.onEventDown(px)
-                }
+
             }
             MotionEvent.ACTION_MOVE -> {
                 if (mode == MODE_DRAW) {
@@ -169,8 +190,13 @@ class SpanGrid(context: Context) : View(context) {
                 }
             }
             MotionEvent.ACTION_UP -> {
+                if (mode == MODE_DRAW) {
+                    val px = getPixelDetails(pxF)
+                    mListener?.onEventDown(px)
+                }
                 isTouched = false
                 lineStartPx = null
+                setTouchCount(0)
                 mListener?.onEventUp()
             }
         }

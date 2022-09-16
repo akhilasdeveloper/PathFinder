@@ -39,7 +39,7 @@ internal fun MainActivity.findPathDijkstra() {
                 while (n != startP) {
                     delay(sleepVal)
                     if (gridHash[n]?.type != Keys.START && gridHash[n]?.type != Keys.END) {
-                        setBit(n, Keys.PATH)
+                        setBit(n, Keys.PATH,gridHash[n]!!.weight)
                         gridCanvasView.play()
                     }
                     n = gridHash[n]?.previous!!
@@ -50,7 +50,8 @@ internal fun MainActivity.findPathDijkstra() {
                 if (gridHash[shortNode]?.type != Keys.START) {
                     setBit(
                         shortNode,
-                        Keys.VISITED
+                        Keys.VISITED,
+                        gridHash[shortNode]!!.weight
                     )
                     gridCanvasView.play()
                 }
@@ -66,7 +67,7 @@ internal fun MainActivity.findPathDijkstra() {
              * if the distance is greater, then assign short distance + 1 to neighbours
              */
             neighbours.forEach {
-                val dis = gridHash[shortNode]!!.distance + 1
+                val dis = gridHash[shortNode]!!.distance + gridHash[it]!!.weight
                 if (dis < gridHash[it]!!.distance) {
                     gridHash[it]!!.distance = dis
                     heapMin.push(it, gridHash)
@@ -102,7 +103,7 @@ private fun MainActivity.getNeighbours(
 
     points.forEach { p ->
         val data = getData(p)
-        if (data.type == Keys.EMPTY || data.type == Keys.END) {
+        if (data.type == Keys.BLOCK1 || data.type == Keys.EMPTY || data.type == Keys.END) {
             n.add(p)
         }
     }

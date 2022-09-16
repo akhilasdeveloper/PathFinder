@@ -9,21 +9,14 @@ import android.widget.LinearLayout
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.PopupMenu
-import androidx.core.content.ContextCompat
 import com.akhilasdeveloper.pathfinder.algorithms.HeapMinHash
 import com.akhilasdeveloper.pathfinder.algorithms.pathfinding.findPathDijkstra
 import com.akhilasdeveloper.pathfinder.algorithms.pathfinding.getData
 import com.akhilasdeveloper.pathfinder.databinding.ActivityMainBinding
-import com.akhilasdeveloper.pathfinder.models.CellItem
-import com.akhilasdeveloper.pathfinder.models.Point
-import com.akhilasdeveloper.pathfinder.models.Square
-import com.akhilasdeveloper.pathfinder.views.Keys
-import com.akhilasdeveloper.pathfinder.views.Keys.BLOCK1
+import com.akhilasdeveloper.pathfinder.models.*
 import com.akhilasdeveloper.pathfinder.views.SpanGrid
-import com.akhilasdeveloper.pathfinder.views.colors
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import kotlinx.coroutines.*
-import kotlin.math.abs
 import kotlin.math.floor
 import kotlin.random.Random
 
@@ -37,7 +30,7 @@ class MainActivity : AppCompatActivity() {
     internal var startPont: Point? = null
     internal var endPont: Point? = null
     private var gaps = mutableListOf<Point>()
-    internal var gridHash: HashMap<Point, Square> = hashMapOf()
+    internal var gridHash: HashMap<Point, Node> = hashMapOf()
     internal var heapMin: HeapMinHash<Point> = HeapMinHash()
     internal var sleepVal = 0L
     private var selectedItem = 0
@@ -126,38 +119,31 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun plotPointOnTouch(px: Point) {
-        when (val type = getType()) {
-            Keys.BLOCK -> {
-                setBit(px, type, Int.MAX_VALUE)
-                gridCanvasView.play()
-            }
-            Keys.BLOCK1 -> {
-                setBit(px, type, 200)
-                gridCanvasView.play()
-            }
-            Keys.START -> {
+        when (val node = getType()) {
+
+            is Node.StartNode -> {
 
                 startPont?.let { start ->
                     clearBit(start)
                 }
 
                 startPont = px
-                setBit(px, type, 0)
+                setBit(px, node)
 
                 gridCanvasView.play()
             }
-            Keys.END -> {
+            is Node.EndNode -> {
 
                 endPont?.let { start ->
                     clearBit(start)
                 }
 
                 endPont = px
-                setBit(px, type, 0)
+                setBit(px, node)
 
                 gridCanvasView.play()
             }
-            Keys.ERASER -> {
+            is Node.AirNode -> {
                 clearBit(px)
                 if (px == startPont)
                     startPont = null
@@ -165,11 +151,15 @@ class MainActivity : AppCompatActivity() {
                     endPont = null
                 gridCanvasView.play()
             }
+            else -> {
+                setBit(px, node)
+                gridCanvasView.play()
+            }
         }
     }
 
     private fun getType() =
-        cellList[selectedItem].cellId
+        cellList[selectedItem].cellNode
 
     private fun init() {
         bottomSheetBehavior = BottomSheetBehavior.from(binding.bottomSheet)
@@ -190,39 +180,87 @@ class MainActivity : AppCompatActivity() {
     private fun initialiseLists() {
         cellList.add(
             CellItem(
-                cellId = Keys.START,
+                cellNode = Node.StartNode(),
                 cellIcon = R.drawable.ic_round_stop_24,
                 cellName = "Start Node"
             )
         )
         cellList.add(
             CellItem(
-                cellId = Keys.END,
+                cellNode = Node.EndNode(),
                 cellIcon = R.drawable.ic_round_stop_24,
                 cellName = "End Node"
             )
         )
         cellList.add(
             CellItem(
-                cellId = Keys.BLOCK,
+                cellNode = Node.WallNode(),
                 cellIcon = R.drawable.ic_round_stop_24,
-                cellName = "Block Node"
+                cellName = "Wall Node"
             )
         )
         cellList.add(
             CellItem(
-                cellId = Keys.BLOCK1,
+                cellNode = Node.AirNode(),
                 cellIcon = R.drawable.ic_round_stop_24,
-                cellName = "Block Node"
+                cellName = "Air Node"
             )
         )
         cellList.add(
             CellItem(
-                cellId = Keys.ERASER,
-                cellIcon = R.drawable.ic_eraser_solid,
-                cellName = "Eraser"
+                cellNode = Node.GraniteNode(),
+                cellIcon = R.drawable.ic_round_stop_24,
+                cellName = "Granite Node"
             )
         )
+        cellList.add(
+            CellItem(
+                cellNode = Node.GrassNode(),
+                cellIcon = R.drawable.ic_round_stop_24,
+                cellName = "Grass Node"
+            )
+        )
+
+        cellList.add(
+            CellItem(
+                cellNode = Node.SandNode(),
+                cellIcon = R.drawable.ic_round_stop_24,
+                cellName = "Sand Node"
+            )
+        )
+
+        cellList.add(
+            CellItem(
+                cellNode = Node.SnowNode(),
+                cellIcon = R.drawable.ic_round_stop_24,
+                cellName = "Snow Node"
+            )
+        )
+
+        cellList.add(
+            CellItem(
+                cellNode = Node.StoneNode(),
+                cellIcon = R.drawable.ic_round_stop_24,
+                cellName = "Stone Node"
+            )
+        )
+
+        cellList.add(
+            CellItem(
+                cellNode = Node.WaterNode(),
+                cellIcon = R.drawable.ic_round_stop_24,
+                cellName = "Water Node"
+            )
+        )
+
+        cellList.add(
+            CellItem(
+                cellNode = Node.WaterDeepNode(),
+                cellIcon = R.drawable.ic_round_stop_24,
+                cellName = "WaterDeep Node"
+            )
+        )
+
 
         pathAlgorithmList.add("Digkstra")
         gridAlgorithmList.add("Recursive Maze")
@@ -286,13 +324,13 @@ class MainActivity : AppCompatActivity() {
         val yEnd = gHeight + startPoint.y
 
         for (i in startPoint.x until xEnd) {
-            setBit(Point(i,startPoint.y), Keys.BLOCK, Int.MAX_VALUE)
-            setBit(Point(i, yEnd), Keys.BLOCK, Int.MAX_VALUE)
+            setBit(Point(i,startPoint.y), Node.WallNode())
+            setBit(Point(i, yEnd), Node.WallNode())
             gridCanvasView.play()
         }
         for (j in startPoint.y until yEnd + 1) {
-            setBit(Point(startPoint.x, j), Keys.BLOCK, Int.MAX_VALUE)
-            setBit(Point(xEnd, j), Keys.BLOCK, Int.MAX_VALUE)
+            setBit(Point(startPoint.x, j), Node.WallNode())
+            setBit(Point(xEnd, j), Node.WallNode())
             gridCanvasView.play()
         }
     }
@@ -386,7 +424,7 @@ class MainActivity : AppCompatActivity() {
             runBlocking {
                 delay(sleepVal)
             }
-            setBit(Point(i, y), Keys.BLOCK, Int.MAX_VALUE)
+            setBit(Point(i, y), Node.WallNode())
             gridCanvasView.play()
         }
     }
@@ -396,20 +434,23 @@ class MainActivity : AppCompatActivity() {
             runBlocking {
                 delay(sleepVal)
             }
-            setBit(Point(x, i), Keys.BLOCK, Int.MAX_VALUE)
+            setBit(Point(x, i), Node.WallNode())
             gridCanvasView.play()
         }
     }
 
-    internal fun setBit(point: Point, type: Int, weight: Int) {
+    internal fun setBit(point: Point, node: Node) {
         val data = getData(point)
-        gridHash[point] = data.copy(type = type, weight = weight)
-        colors[type]?.let {
-            gridCanvasView.plotPoint(
-                point,
-                ContextCompat.getColor(this, it)
-            )
+        gridHash[point] = node.apply {
+            nodeData = data.nodeData
         }
+
+        val color = if (node.nodeData.isVisited) R.color.visited.toColor(this) else node.color.toColor(this)
+
+        gridCanvasView.plotPoint(
+            point,
+            color
+        )
 
     }
 

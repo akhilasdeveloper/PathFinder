@@ -1,9 +1,8 @@
 package com.akhilasdeveloper.pathfinder.algorithms.pathfinding
 
 import com.akhilasdeveloper.pathfinder.MainActivity
+import com.akhilasdeveloper.pathfinder.models.Node
 import com.akhilasdeveloper.pathfinder.models.Point
-import com.akhilasdeveloper.pathfinder.models.Square
-import com.akhilasdeveloper.pathfinder.views.Keys
 import kotlinx.coroutines.*
 
 
@@ -15,7 +14,7 @@ internal fun MainActivity.findPathDijkstra() {
         val endP = endPont!!
 
         /** set start node distance as 0 and push to heap*/
-        gridHash[startP]?.distance = 0
+
         heapMin.push(startP, gridHash)
 
         while (true) {
@@ -38,8 +37,8 @@ internal fun MainActivity.findPathDijkstra() {
                 var n: Point = shortNode
                 while (n != startP) {
                     delay(sleepVal)
-                    if (gridHash[n]?.type != Keys.START && gridHash[n]?.type != Keys.END) {
-                        setBit(n, Keys.PATH,gridHash[n]!!.weight)
+                    if (gridHash[n] !is Node.StartNode && gridHash[n] !is Node.EndNode) {
+                        setBit(n, Node.PathNode())
                         gridCanvasView.play()
                     }
                     n = gridHash[n]?.previous!!
@@ -47,11 +46,10 @@ internal fun MainActivity.findPathDijkstra() {
                 break
             } else {
                 if (gridHash[shortNode]?.distance == Int.MAX_VALUE) break
-                if (gridHash[shortNode]?.type != Keys.START) {
+                if (gridHash[shortNode] !is Node.StartNode) {
                     setBit(
                         shortNode,
-                        Keys.VISITED,
-                        gridHash[shortNode]!!.weight
+                        gridHash[shortNode]!!.asVisited()
                     )
                     gridCanvasView.play()
                 }
@@ -103,11 +101,11 @@ private fun MainActivity.getNeighbours(
 
     points.forEach { p ->
         val data = getData(p)
-        if (data.type == Keys.BLOCK1 || data.type == Keys.EMPTY || data.type == Keys.END) {
+        if (data is Node.AirNode || data is Node.EndNode) {
             n.add(p)
         }
     }
     return n.toTypedArray()
 }
 
-internal fun MainActivity.getData(index: Point) = gridHash.getOrPut(index) { Square() }
+internal fun MainActivity.getData(index: Point) = gridHash.getOrPut(index) { Node.AirNode() }

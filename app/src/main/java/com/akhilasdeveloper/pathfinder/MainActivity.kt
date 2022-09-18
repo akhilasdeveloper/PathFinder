@@ -9,11 +9,16 @@ import android.widget.LinearLayout
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.PopupMenu
+import androidx.core.content.ContextCompat
 import com.akhilasdeveloper.pathfinder.algorithms.HeapMinHash
 import com.akhilasdeveloper.pathfinder.algorithms.pathfinding.findPathDijkstra
 import com.akhilasdeveloper.pathfinder.algorithms.pathfinding.getData
 import com.akhilasdeveloper.pathfinder.databinding.ActivityMainBinding
-import com.akhilasdeveloper.pathfinder.models.*
+import com.akhilasdeveloper.pathfinder.models.CellItem
+import com.akhilasdeveloper.pathfinder.models.Point
+import com.akhilasdeveloper.pathfinder.models.Square
+import com.akhilasdeveloper.pathfinder.models.nodes
+import com.akhilasdeveloper.pathfinder.views.Keys
 import com.akhilasdeveloper.pathfinder.views.SpanGrid
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import kotlinx.coroutines.*
@@ -30,7 +35,7 @@ class MainActivity : AppCompatActivity() {
     internal var startPont: Point? = null
     internal var endPont: Point? = null
     private var gaps = mutableListOf<Point>()
-    internal var gridHash: HashMap<Point, Node> = hashMapOf()
+    internal var gridHash: HashMap<Point, Square> = hashMapOf()
     internal var heapMin: HeapMinHash<Point> = HeapMinHash()
     internal var sleepVal = 0L
     private var selectedItem = 0
@@ -86,14 +91,18 @@ class MainActivity : AppCompatActivity() {
             val popupMenu = PopupMenu(this@MainActivity, it)
 
             popupMenu.menuInflater.inflate(R.menu.menu_path_algorithms, popupMenu.menu)
-            popupMenu.setOnMenuItemClickListener { menuItem -> // Toast message on menu item clicked
+            popupMenu.setOnMenuItemClickListener { menuItem ->
 
-                when(menuItem.itemId){
+                when (menuItem.itemId) {
                     R.id.digkstra -> {
-                        if (startPont!=null && endPont!=null)
+                        if (startPont != null && endPont != null)
                             findPathDijkstra()
                         else
-                            Toast.makeText(this, "Please select start point and end point", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(
+                                this,
+                                "Please select start point and end point",
+                                Toast.LENGTH_SHORT
+                            ).show()
                     }
                 }
                 true
@@ -105,8 +114,8 @@ class MainActivity : AppCompatActivity() {
             val popupMenu = PopupMenu(this@MainActivity, it)
 
             popupMenu.menuInflater.inflate(R.menu.menu_maze_algorithms, popupMenu.menu)
-            popupMenu.setOnMenuItemClickListener { menuItem -> // Toast message on menu item clicked
-                when(menuItem.itemId){
+            popupMenu.setOnMenuItemClickListener { menuItem ->
+                when (menuItem.itemId) {
                     R.id.recursive -> {
                         generateMaze()
                     }
@@ -119,31 +128,29 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun plotPointOnTouch(px: Point) {
-        when (val node = getType()) {
+        when (val type = getType()) {
 
-            is Node.StartNode -> {
-
+            Keys.START -> {
                 startPont?.let { start ->
                     clearBit(start)
                 }
-
                 startPont = px
-                setBit(px, node)
+                setBit(px, type)
 
                 gridCanvasView.play()
             }
-            is Node.EndNode -> {
+            Keys.END -> {
 
                 endPont?.let { start ->
                     clearBit(start)
                 }
 
                 endPont = px
-                setBit(px, node)
+                setBit(px, type)
 
                 gridCanvasView.play()
             }
-            is Node.AirNode -> {
+            Keys.AIR -> {
                 clearBit(px)
                 if (px == startPont)
                     startPont = null
@@ -152,14 +159,14 @@ class MainActivity : AppCompatActivity() {
                 gridCanvasView.play()
             }
             else -> {
-                setBit(px, node)
+                setBit(px, type)
                 gridCanvasView.play()
             }
         }
     }
 
     private fun getType() =
-        cellList[selectedItem].cellNode
+        cellList[selectedItem].cell.type
 
     private fun init() {
         bottomSheetBehavior = BottomSheetBehavior.from(binding.bottomSheet)
@@ -178,89 +185,14 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun initialiseLists() {
-        cellList.add(
-            CellItem(
-                cellNode = Node.StartNode(),
-                cellIcon = R.drawable.ic_round_stop_24,
-                cellName = "Start Node"
-            )
-        )
-        cellList.add(
-            CellItem(
-                cellNode = Node.EndNode(),
-                cellIcon = R.drawable.ic_round_stop_24,
-                cellName = "End Node"
-            )
-        )
-        cellList.add(
-            CellItem(
-                cellNode = Node.WallNode(),
-                cellIcon = R.drawable.ic_round_stop_24,
-                cellName = "Wall Node"
-            )
-        )
-        cellList.add(
-            CellItem(
-                cellNode = Node.AirNode(),
-                cellIcon = R.drawable.ic_round_stop_24,
-                cellName = "Air Node"
-            )
-        )
-        cellList.add(
-            CellItem(
-                cellNode = Node.GraniteNode(),
-                cellIcon = R.drawable.ic_round_stop_24,
-                cellName = "Granite Node"
-            )
-        )
-        cellList.add(
-            CellItem(
-                cellNode = Node.GrassNode(),
-                cellIcon = R.drawable.ic_round_stop_24,
-                cellName = "Grass Node"
-            )
-        )
 
-        cellList.add(
-            CellItem(
-                cellNode = Node.SandNode(),
-                cellIcon = R.drawable.ic_round_stop_24,
-                cellName = "Sand Node"
+        for (node in nodes) {
+            cellList.add(
+                CellItem(
+                    cell = nodes(node)
+                )
             )
-        )
-
-        cellList.add(
-            CellItem(
-                cellNode = Node.SnowNode(),
-                cellIcon = R.drawable.ic_round_stop_24,
-                cellName = "Snow Node"
-            )
-        )
-
-        cellList.add(
-            CellItem(
-                cellNode = Node.StoneNode(),
-                cellIcon = R.drawable.ic_round_stop_24,
-                cellName = "Stone Node"
-            )
-        )
-
-        cellList.add(
-            CellItem(
-                cellNode = Node.WaterNode(),
-                cellIcon = R.drawable.ic_round_stop_24,
-                cellName = "Water Node"
-            )
-        )
-
-        cellList.add(
-            CellItem(
-                cellNode = Node.WaterDeepNode(),
-                cellIcon = R.drawable.ic_round_stop_24,
-                cellName = "WaterDeep Node"
-            )
-        )
-
+        }
 
         pathAlgorithmList.add("Digkstra")
         gridAlgorithmList.add("Recursive Maze")
@@ -310,10 +242,15 @@ class MainActivity : AppCompatActivity() {
             val startPoint = gridCanvasView.startPoint
 
             gHeight = if (gHeight % 2 == 0) gHeight else gHeight - 1
-            gWidth = if (gWidth % 2 == 0) gWidth  else gWidth - 1
+            gWidth = if (gWidth % 2 == 0) gWidth else gWidth - 1
 
             generateBorder(startPoint, gWidth, gHeight)
-            recursiveMaze(startPoint.x + 1, startPoint.y + 1, gWidth + startPoint.x - 1, gHeight + startPoint.y - 1)
+            recursiveMaze(
+                startPoint.x + 1,
+                startPoint.y + 1,
+                gWidth + startPoint.x - 1,
+                gHeight + startPoint.y - 1
+            )
 
         }
     }
@@ -324,13 +261,13 @@ class MainActivity : AppCompatActivity() {
         val yEnd = gHeight + startPoint.y
 
         for (i in startPoint.x until xEnd) {
-            setBit(Point(i,startPoint.y), Node.WallNode())
-            setBit(Point(i, yEnd), Node.WallNode())
+            setBit(Point(i, startPoint.y), Keys.WALL)
+            setBit(Point(i, yEnd), Keys.WALL)
             gridCanvasView.play()
         }
         for (j in startPoint.y until yEnd + 1) {
-            setBit(Point(startPoint.x, j), Node.WallNode())
-            setBit(Point(xEnd, j), Node.WallNode())
+            setBit(Point(startPoint.x, j), Keys.WALL)
+            setBit(Point(xEnd, j), Keys.WALL)
             gridCanvasView.play()
         }
     }
@@ -424,7 +361,7 @@ class MainActivity : AppCompatActivity() {
             runBlocking {
                 delay(sleepVal)
             }
-            setBit(Point(i, y), Node.WallNode())
+            setBit(Point(i, y), Keys.WALL)
             gridCanvasView.play()
         }
     }
@@ -434,22 +371,17 @@ class MainActivity : AppCompatActivity() {
             runBlocking {
                 delay(sleepVal)
             }
-            setBit(Point(x, i), Node.WallNode())
+            setBit(Point(x, i), Keys.WALL)
             gridCanvasView.play()
         }
     }
 
-    internal fun setBit(point: Point, node: Node) {
-        val data = getData(point)
-        gridHash[point] = node.apply {
-            nodeData = data.nodeData
-        }
-
-        val color = if (node.nodeData.isVisited) R.color.visited.toColor(this) else node.color.toColor(this)
-
+    internal fun setBit(point: Point, type: Int) {
+        val data = getData(point).copyToType(type = type)
+        gridHash[point] = data
         gridCanvasView.plotPoint(
             point,
-            color
+            ContextCompat.getColor(this, data.color)
         )
 
     }

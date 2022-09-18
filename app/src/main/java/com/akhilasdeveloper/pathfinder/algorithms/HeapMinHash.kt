@@ -1,10 +1,12 @@
 package com.akhilasdeveloper.pathfinder.algorithms
 
-import com.akhilasdeveloper.pathfinder.models.Node
+import com.akhilasdeveloper.pathfinder.models.Square
+import com.akhilasdeveloper.pathfinder.models.nodes
+import com.akhilasdeveloper.pathfinder.views.Keys
 
 class HeapMinHash<T> {
     private val heapMin: MutableList<T> = mutableListOf()
-    private var data: HashMap<T, Node> = hashMapOf()
+    private var data: HashMap<T, Square> = hashMapOf()
 
     private fun getLeftChildIndex(parentIndex: Int) = 2 * parentIndex + 1
     private fun getRightChildIndex(parentIndex: Int) = 2 * parentIndex + 2
@@ -18,7 +20,7 @@ class HeapMinHash<T> {
     private fun rightChild(index: Int) = heapMin[getRightChildIndex(index)]
     private fun parent(index: Int) = heapMin[getParentIndex(index)]
 
-    fun pull(data: HashMap<T, Node>?): T? {
+    fun pull(data: HashMap<T, Square>?): T? {
         this.data = data ?: hashMapOf()
         if (heapMin.size == 0) return null
         val item = heapMin[0]
@@ -28,7 +30,7 @@ class HeapMinHash<T> {
         return item
     }
 
-    fun push(item: T, data: HashMap<T, Node>?) {
+    fun push(item: T, data: HashMap<T, Square>?) {
         this.data = data ?: hashMapOf()
         heapMin.add(item)
         heapUp()
@@ -49,7 +51,7 @@ class HeapMinHash<T> {
         }
     }
 
-    private fun getData(index: T) = data.getOrPut(index) { Node.AirNode() }
+    private fun getData(index: T) = data.getOrPut(index) { nodes() }
 
     private fun heapDown() {
         if (data.isNotEmpty()) {

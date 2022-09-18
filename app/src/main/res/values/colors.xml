@@ -8,6 +8,7 @@
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
 
+    <color name="block1">#8A1188</color>
     <color name="empty">#F9F6FF</color>
     <color name="block">#0c3547</color>
     <color name="granite">#515151</color>

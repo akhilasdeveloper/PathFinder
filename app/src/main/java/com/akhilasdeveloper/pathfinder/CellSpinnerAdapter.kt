@@ -6,10 +6,10 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ArrayAdapter
+import androidx.core.content.ContextCompat
 import androidx.core.widget.ImageViewCompat
 import com.akhilasdeveloper.pathfinder.databinding.CellSpinnerRowBinding
 import com.akhilasdeveloper.pathfinder.models.CellItem
-import com.akhilasdeveloper.pathfinder.models.toColor
 
 class CellSpinnerAdapter(context: Context, list: ArrayList<CellItem>) :
     ArrayAdapter<CellItem>(context, 0, list) {
@@ -32,11 +32,11 @@ class CellSpinnerAdapter(context: Context, list: ArrayList<CellItem>) :
 
         getItem(position)?.let { item ->
             view.cellIcon.setImageResource(item.cellIcon)
-            ImageViewCompat.setImageTintList(
-                view.cellIcon,
-                ColorStateList.valueOf(item.cellNode.color.toColor(context))
-            )
-            view.cellName.text = item.cellName
+                ImageViewCompat.setImageTintList(
+                    view.cellIcon,
+                    ColorStateList.valueOf(ContextCompat.getColor(context, item.cell.color))
+                )
+            view.cellName.text = item.cell.name
         }
 
         return view.root

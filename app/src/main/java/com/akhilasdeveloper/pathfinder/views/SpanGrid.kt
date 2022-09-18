@@ -247,6 +247,7 @@ class SpanGrid(context: Context) : View(context) {
 
     private fun drawRect(x1: Float, y1: Float, x2: Float, y2: Float, type: Int) {
         paint.color = type
+        paint.color = type
         canvasBuffer?.drawRect(x1, y1, x2, y2, paint)
     }
 

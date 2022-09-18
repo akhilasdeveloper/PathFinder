@@ -1,8 +1,9 @@
 package com.akhilasdeveloper.pathfinder.algorithms.pathfinding
 
 import com.akhilasdeveloper.pathfinder.MainActivity
-import com.akhilasdeveloper.pathfinder.models.Node
 import com.akhilasdeveloper.pathfinder.models.Point
+import com.akhilasdeveloper.pathfinder.models.nodes
+import com.akhilasdeveloper.pathfinder.views.Keys
 import kotlinx.coroutines.*
 
 
@@ -14,7 +15,7 @@ internal fun MainActivity.findPathDijkstra() {
         val endP = endPont!!
 
         /** set start node distance as 0 and push to heap*/
-
+        gridHash[startP]?.distance = 0
         heapMin.push(startP, gridHash)
 
         while (true) {
@@ -26,7 +27,8 @@ internal fun MainActivity.findPathDijkstra() {
              * fetch short node from heap
              * if the heap returns null (heap is empty) the exit the loop. All nodes are visited and destination is not reachable
              */
-            val shortNode: Point = heapMin.pull(gridHash) ?: break
+            val node = heapMin.pull(gridHash)
+            val shortNode: Point = node ?: break
 
             /**
              * if short node == end node, then the destination is reached.
@@ -37,8 +39,8 @@ internal fun MainActivity.findPathDijkstra() {
                 var n: Point = shortNode
                 while (n != startP) {
                     delay(sleepVal)
-                    if (gridHash[n] !is Node.StartNode && gridHash[n] !is Node.EndNode) {
-                        setBit(n, Node.PathNode())
+                    if (gridHash[n]?.type != Keys.START && gridHash[n]?.type != Keys.END) {
+                        setBit(n, Keys.PATH)
                         gridCanvasView.play()
                     }
                     n = gridHash[n]?.previous!!
@@ -46,10 +48,10 @@ internal fun MainActivity.findPathDijkstra() {
                 break
             } else {
                 if (gridHash[shortNode]?.distance == Int.MAX_VALUE) break
-                if (gridHash[shortNode] !is Node.StartNode) {
+                if (gridHash[shortNode]?.type != Keys.START) {
                     setBit(
                         shortNode,
-                        gridHash[shortNode]!!.asVisited()
+                        Keys.VISITED
                     )
                     gridCanvasView.play()
                 }
@@ -101,11 +103,20 @@ private fun MainActivity.getNeighbours(
 
     points.forEach { p ->
         val data = getData(p)
-        if (data is Node.AirNode || data is Node.EndNode) {
+        if (data.type == Keys.END ||
+            data.type == Keys.AIR ||
+            data.type == Keys.GRANITE ||
+            data.type == Keys.GRASS ||
+            data.type == Keys.SAND ||
+            data.type == Keys.SNOW ||
+            data.type == Keys.STONE ||
+            data.type == Keys.WATER ||
+            data.type == Keys.WATER_DEEP
+        ) {
             n.add(p)
         }
     }
     return n.toTypedArray()
 }
 
-internal fun MainActivity.getData(index: Point) = gridHash.getOrPut(index) { Node.AirNode() }
+internal fun MainActivity.getData(index: Point) = gridHash.getOrPut(index) { nodes() }

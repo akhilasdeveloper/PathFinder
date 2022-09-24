@@ -7,7 +7,7 @@ import com.akhilasdeveloper.pathfinder.views.Keys
 import kotlinx.coroutines.*
 
 
-internal fun MainActivity.findPathDijkstra() {
+internal fun MainActivity.findPathDijkstr() {
 
     CoroutineScope(Dispatchers.Default).launch {
 
@@ -39,8 +39,10 @@ internal fun MainActivity.findPathDijkstra() {
                 var n: Point = shortNode
                 while (n != startP) {
                     delay(sleepVal)
-                    if (gridHash[n]?.type != Keys.START && gridHash[n]?.type != Keys.END) {
+                    val nodeN = gridHash[n]
+                    if (nodeN?.type != Keys.START && nodeN?.type != Keys.END) {
                         setBit(n, Keys.PATH)
+//                        setPath(n)
                         gridCanvasView.play()
                     }
                     n = gridHash[n]?.previous!!
@@ -48,7 +50,9 @@ internal fun MainActivity.findPathDijkstra() {
                 break
             } else {
                 if (gridHash[shortNode]?.distance == Int.MAX_VALUE) break
-                if (gridHash[shortNode]?.type != Keys.START) {
+                val nodeN = gridHash[shortNode]
+                if (nodeN?.type != Keys.START) {
+//                    setVisited(shortNode)
                     setBit(
                         shortNode,
                         Keys.VISITED

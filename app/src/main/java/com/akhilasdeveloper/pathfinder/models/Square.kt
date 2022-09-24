@@ -4,6 +4,9 @@ import android.content.Context
 import androidx.core.content.ContextCompat
 import com.akhilasdeveloper.pathfinder.R
 import com.akhilasdeveloper.pathfinder.views.Keys
+import com.akhilasdeveloper.pathfinder.views.Keys.AIR
+import com.akhilasdeveloper.pathfinder.views.Keys.PATH
+import com.akhilasdeveloper.pathfinder.views.Keys.VISITED
 
 data class Square(
     var name: String,
@@ -11,16 +14,14 @@ data class Square(
     var distance: Int = Int.MAX_VALUE,
     var weight: Int = 1,
     var previous: Point? = null,
-    var color: Int
+    var color: Int,
+    var fillColor: Int = color,
 ) {
-    fun toType(type: Int): Square {
-        val node = nodes(type)
-        return this.copy(type = node.type, weight = node.weight, color = node.color)
-    }
 
     fun copyToType(type: Int): Square {
         val node = nodes(type)
-        return node.copy(distance = this.distance, previous = this.previous)
+        val color = if ((type == PATH || type == VISITED) && this.type != AIR ) this.color else node.color
+        return node.copy(distance = this.distance, previous = this.previous, color = color)
     }
 
 }

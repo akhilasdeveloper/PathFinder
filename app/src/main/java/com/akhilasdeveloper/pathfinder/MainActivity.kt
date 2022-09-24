@@ -11,7 +11,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.PopupMenu
 import androidx.core.content.ContextCompat
 import com.akhilasdeveloper.pathfinder.algorithms.HeapMinHash
-import com.akhilasdeveloper.pathfinder.algorithms.pathfinding.findPathDijkstra
+import com.akhilasdeveloper.pathfinder.algorithms.pathfinding.findPathDijkstr
 import com.akhilasdeveloper.pathfinder.algorithms.pathfinding.getData
 import com.akhilasdeveloper.pathfinder.databinding.ActivityMainBinding
 import com.akhilasdeveloper.pathfinder.models.CellItem
@@ -19,6 +19,7 @@ import com.akhilasdeveloper.pathfinder.models.Point
 import com.akhilasdeveloper.pathfinder.models.Square
 import com.akhilasdeveloper.pathfinder.models.nodes
 import com.akhilasdeveloper.pathfinder.views.Keys
+import com.akhilasdeveloper.pathfinder.views.Keys.AIR
 import com.akhilasdeveloper.pathfinder.views.SpanGrid
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import kotlinx.coroutines.*
@@ -96,7 +97,7 @@ class MainActivity : AppCompatActivity() {
                 when (menuItem.itemId) {
                     R.id.digkstra -> {
                         if (startPont != null && endPont != null)
-                            findPathDijkstra()
+                            findPathDijkstr()
                         else
                             Toast.makeText(
                                 this,
@@ -203,37 +204,6 @@ class MainActivity : AppCompatActivity() {
         return true
     }
 
-    override fun onOptionsItemSelected(item: MenuItem): Boolean {
-        return when (item.itemId) {
-            R.id.play -> {
-                if (!invalidateData()) {
-                    Toast.makeText(
-                        this,
-                        "Select Start point and end point",
-                        Toast.LENGTH_LONG
-                    ).show()
-                } else {
-                    findPathDijkstra()
-                }
-                true
-            }
-            R.id.scale -> {
-                if (bottomSheetBehavior.state == BottomSheetBehavior.STATE_EXPANDED)
-                    bottomSheetBehavior.state = BottomSheetBehavior.STATE_HIDDEN
-                else
-                    bottomSheetBehavior.state = BottomSheetBehavior.STATE_EXPANDED
-                true
-            }
-            R.id.grid -> {
-                if (binding.enableEdit.isChecked)
-                    binding.enableEdit.isChecked = false
-                binding.blockers.isChecked = true
-                generateMaze()
-                true
-            }
-            else -> super.onOptionsItemSelected(item)
-        }
-    }
 
     private fun generateMaze() {
         CoroutineScope(Dispatchers.Default).launch {
@@ -381,10 +351,24 @@ class MainActivity : AppCompatActivity() {
         gridHash[point] = data
         gridCanvasView.plotPoint(
             point,
+            ContextCompat.getColor(this, data.fillColor),
             ContextCompat.getColor(this, data.color)
         )
-
     }
+
+/*    internal fun setBit(point: Point, type: Int) {
+        val data = getData(point)
+        var strokeColor = data.color
+        val dataN = data.copyToType(type = type)
+        gridHash[point] = dataN
+        val color = dataN.color
+        strokeColor = if (data.type == AIR) color else strokeColor
+        gridCanvasView.plotPoint(
+            point,
+            ContextCompat.getColor(this, color),
+            ContextCompat.getColor(this, strokeColor)
+        )
+    }*/
 
     private fun clearBit(point: Point) {
         gridHash.remove(point)

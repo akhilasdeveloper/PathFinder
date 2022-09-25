@@ -10,8 +10,11 @@ import android.view.ScaleGestureDetector
 import android.view.View
 import androidx.core.content.res.ResourcesCompat
 import com.akhilasdeveloper.pathfinder.R
+import com.akhilasdeveloper.pathfinder.algorithms.quadtree.QuadTree
+import com.akhilasdeveloper.pathfinder.algorithms.quadtree.RectangleCentered
 import com.akhilasdeveloper.pathfinder.models.Point
 import com.akhilasdeveloper.pathfinder.models.PointF
+import timber.log.Timber
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.math.abs
 
@@ -26,7 +29,10 @@ class SpanGrid(context: Context) : View(context) {
     private var bitmapBuffer: Bitmap? = null
 
     var xOff = 0f
-        private set
+        private set(value) {
+            field = value
+            Timber.d("xOff : $value")
+        }
     var yOff = 0f
         private set
 
@@ -45,7 +51,9 @@ class SpanGrid(context: Context) : View(context) {
 
     private val history = ConcurrentHashMap<Point, Int>()
     private val historyStroke = ConcurrentHashMap<Point, Int>()
+    private val cellBitmap = ConcurrentHashMap<Pair<Int,Int>, Bitmap>()
     private val defaultCellColor = ResourcesCompat.getColor(context.resources, R.color.empty, null)
+    private val historyQuad = QuadTree(RectangleCentered(0,0, Int.MAX_VALUE/2, Int.MAX_VALUE/2) , 4 )
     private val lineColor = ResourcesCompat.getColor(context.resources, R.color.gray_600, null)
     private var lineStartPx: Point? = null
 
@@ -61,6 +69,7 @@ class SpanGrid(context: Context) : View(context) {
     var resolution: Float = 0f
         set(value) {
             field = value
+//            cellBitmap.clear()
             this.setGridSize()
         }
 
@@ -268,22 +277,37 @@ class SpanGrid(context: Context) : View(context) {
     private fun drawRectStroke(x1: Float, y1: Float, x2: Float, y2: Float, color: Int,strokeColor: Int) {
 
         if (color != strokeColor) {
-            paint.style = Paint.Style.STROKE
 
-            paint.strokeWidth = strokeWidth
-            paint.color = strokeColor
-            var addFact = strokeWidth / 2
-            canvasBuffer?.drawRect(x1 + addFact, y1 + addFact, x2 - addFact, y2 - addFact, paint)
+            val bitmap = cellBitmap.getOrPut(Pair(color, strokeColor)){
 
-            paint.color = lineColor
-            paint.strokeWidth = lineWidth
-            addFact = strokeWidth + (lineWidth/2)
-            canvasBuffer?.drawRect(x1 + addFact, y1 + addFact, x2 - addFact, y2 - addFact, paint)
+                val w = (x2-x1).toInt()
+                val h = (y2-y1).toInt()
 
-            addFact = strokeWidth + lineWidth
-            paint.color = color
-            paint.style = Paint.Style.FILL
-            canvasBuffer?.drawRect(x1 + addFact, y1 + addFact, x2 - addFact, y2 - addFact, paint)
+                val bmp = Bitmap.createBitmap(w, h, Bitmap.Config.RGB_565)
+                val canva = Canvas(bmp)
+
+                paint.style = Paint.Style.STROKE
+
+                paint.strokeWidth = strokeWidth
+                paint.color = strokeColor
+                var addFact = strokeWidth / 2
+                canva.drawRect(0 + addFact, 0 + addFact, w - addFact, h - addFact, paint)
+
+                paint.color = lineColor
+                paint.strokeWidth = lineWidth
+                addFact = strokeWidth + (lineWidth/2)
+                canva.drawRect(0 + addFact, 0 + addFact, w - addFact, h - addFact, paint)
+
+                addFact = strokeWidth + lineWidth
+                paint.color = color
+                paint.style = Paint.Style.FILL
+                canva.drawRect(0 + addFact, 0 + addFact, w - addFact, h - addFact, paint)
+
+                bmp
+            }
+
+            canvasBuffer?.drawBitmap(bitmap, x1 , y1 , paint)
+
         }else{
             drawRect(x1, y1, x2, y2, color)
         }
@@ -293,6 +317,9 @@ class SpanGrid(context: Context) : View(context) {
 
     fun plotPoint(px: Point, color: Int, strokeColor: Int) {
         history[px] = color
+        historyQuad.insert(px)
+        Timber.d("QuadTree Output pixel : $px")
+        Timber.d("QuadTree Output history : ${history.size}")
         historyStroke[px] = strokeColor
         setRectRestore(px, color)
     }
@@ -322,8 +349,7 @@ class SpanGrid(context: Context) : View(context) {
         drawLinePx(xs1,ys1,xs2,ys2)
     }
 
-    private fun populateAll() {
-
+    private fun drawLines() {
 
         for (xx in -1..gridWidth.toInt() + 1) {
             val px1 = Point(xx - xOff.toInt(), -1 - yOff.toInt() )
@@ -350,21 +376,41 @@ class SpanGrid(context: Context) : View(context) {
         clearCanvas()
         gridWidth = ((width - lineWidth) / (resolution + lineWidth))
         gridHeight = ((height - lineWidth) / (resolution + lineWidth))
-        populateAll()
+
+        if (lineEnabled)
+            drawLines()
         restore()
         postInvalidate()
     }
 
     private fun restore() {
-        history.forEach {
-            setRectRestore(it.key, it.value)
+        val w = Int.MAX_VALUE / 2
+        val h = Int.MAX_VALUE / 2
+        val x = 0
+        val y = 0
+        val points = historyQuad.pull(RectangleCentered(
+            x = x.toInt(),
+            y = y.toInt(),
+            w = w.toInt(),
+            h = h.toInt()
+        ))
+
+        points.forEach {point->
+            history[point]?.let {
+                setRectRestore(point, it)
+            }
         }
+
+        Timber.d("QuadTree Output points : ${points.size}")
+
+        /*history.forEach() {
+            setRectRestore(it.key, it.value)
+        }*/
     }
 
     private fun getViewFactor(c: Float) = (c * (resolution + lineWidth))
 
     private fun clearCanvas() {
-//        canvasBuffer?.drawColor(if (lineEnabled) lineColor else defaultCellColor)
         canvasBuffer?.drawColor(defaultCellColor)
     }
 

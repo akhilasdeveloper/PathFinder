@@ -356,24 +356,9 @@ class MainActivity : AppCompatActivity() {
         )
     }
 
-/*    internal fun setBit(point: Point, type: Int) {
-        val data = getData(point)
-        var strokeColor = data.color
-        val dataN = data.copyToType(type = type)
-        gridHash[point] = dataN
-        val color = dataN.color
-        strokeColor = if (data.type == AIR) color else strokeColor
-        gridCanvasView.plotPoint(
-            point,
-            ContextCompat.getColor(this, color),
-            ContextCompat.getColor(this, strokeColor)
-        )
-    }*/
-
     private fun clearBit(point: Point) {
         gridHash.remove(point)
         gridCanvasView.removeRect(point)
     }
 
-    private fun invalidateData() = startPont != null && endPont != null
 }

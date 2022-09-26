@@ -29,10 +29,8 @@ class SpanGrid(context: Context) : View(context) {
     private var bitmapBuffer: Bitmap? = null
 
     var xOff = 0f
-        private set(value) {
-            field = value
-            Timber.d("xOff : $value")
-        }
+        private set
+
     var yOff = 0f
         private set
 
@@ -51,9 +49,8 @@ class SpanGrid(context: Context) : View(context) {
 
     private val history = ConcurrentHashMap<Point, Int>()
     private val historyStroke = ConcurrentHashMap<Point, Int>()
-    private val cellBitmap = ConcurrentHashMap<Pair<Int,Int>, Bitmap>()
     private val defaultCellColor = ResourcesCompat.getColor(context.resources, R.color.empty, null)
-    private val historyQuad = QuadTree(RectangleCentered(0,0, Int.MAX_VALUE/2, Int.MAX_VALUE/2) , 4 )
+    private val historyQuad = QuadTree(RectangleCentered(0f, 0f, Int.MAX_VALUE.toFloat() , Int.MAX_VALUE.toFloat() ), 4)
     private val lineColor = ResourcesCompat.getColor(context.resources, R.color.gray_600, null)
     private var lineStartPx: Point? = null
 
@@ -69,20 +66,26 @@ class SpanGrid(context: Context) : View(context) {
     var resolution: Float = 0f
         set(value) {
             field = value
-//            cellBitmap.clear()
             this.setGridSize()
         }
 
     var lineWidth: Float = 1f
         set(value) {
             field = value
+            _lineWidth = value
             this.setGridSize()
         }
-    var strokeWidth: Float = 5f
+
+    var strokeWidth: Float = 1f
         set(value) {
             field = value
+            _strokeWidth = value
             this.setGridSize()
         }
+
+    private var _lineWidth: Float = 1f
+    private var _strokeWidth: Float = 5f
+
 
     var gridWidth: Float = 0f
         private set
@@ -120,12 +123,12 @@ class SpanGrid(context: Context) : View(context) {
             if (mode == MODE_VIEW && scaleEnabled) {
 
                 val scale = resolution * detector.scaleFactor
-                if (scale in 20f..100f) {
+                if (scale in 10f..100f) {
 
-                    lineWidth *= detector.scaleFactor
-                    strokeWidth *= detector.scaleFactor
+                    _lineWidth *= detector.scaleFactor
+                    _strokeWidth *= detector.scaleFactor
 
-                    val fact = (scale - resolution) / ((resolution + lineWidth) * (scale + lineWidth))
+                    val fact = (scale - resolution) / ((resolution + _lineWidth) * (scale + _lineWidth))
 
                     xOff -= detector.focusX * fact
                     yOff -= detector.focusY * fact
@@ -158,20 +161,20 @@ class SpanGrid(context: Context) : View(context) {
      * Change the canvas coordinates to Grid Coordinates
      */
     private fun getPixelDetails(px: PointF): Point {
-        val fact = resolution + lineWidth
+        val fact = resolution + _lineWidth
         val sx = (px.x / fact) - xOff
         val sy = (px.y / fact) - yOff
         return Point(sx.toInt(), sy.toInt())
     }
 
-    private fun determineViewMode(){
+    private fun determineViewMode() {
         mode = if (touchCount > 1)
             MODE_VIEW
         else
             MODE_DRAW
     }
 
-    private fun setTouchCount(count: Int){
+    private fun setTouchCount(count: Int) {
         if (count == 0)
             touchCount = 0
         else
@@ -264,51 +267,45 @@ class SpanGrid(context: Context) : View(context) {
     private fun drawRect(x1: Float, y1: Float, x2: Float, y2: Float, color: Int) {
         paint.color = color
         paint.style = Paint.Style.FILL
-        canvasBuffer?.drawRect(x1 , y1 , x2 , y2 , paint)
+        canvasBuffer?.drawRect(x1, y1, x2, y2, paint)
     }
 
     private fun drawLinePx(x1: Float, y1: Float, x2: Float, y2: Float) {
         paint.color = lineColor
-        paint.strokeWidth = lineWidth
+        paint.strokeWidth = _lineWidth
         paint.style = Paint.Style.STROKE
-        canvasBuffer?.drawLine(x1 , y1 , x2 , y2 , paint)
+        canvasBuffer?.drawLine(x1, y1, x2, y2, paint)
     }
 
-    private fun drawRectStroke(x1: Float, y1: Float, x2: Float, y2: Float, color: Int,strokeColor: Int) {
+    private fun drawRectStroke(
+        x1: Float,
+        y1: Float,
+        x2: Float,
+        y2: Float,
+        color: Int,
+        strokeColor: Int
+    ) {
 
         if (color != strokeColor) {
 
-            val bitmap = cellBitmap.getOrPut(Pair(color, strokeColor)){
+            paint.style = Paint.Style.STROKE
 
-                val w = (x2-x1).toInt()
-                val h = (y2-y1).toInt()
+            paint.strokeWidth = _strokeWidth
+            paint.color = strokeColor
+            var addFact = _strokeWidth / 2
+            canvasBuffer?.drawRect(x1 + addFact, y1 + addFact, x2 - addFact, y2 - addFact, paint)
 
-                val bmp = Bitmap.createBitmap(w, h, Bitmap.Config.RGB_565)
-                val canva = Canvas(bmp)
+            paint.color = lineColor
+            paint.strokeWidth = _lineWidth
+            addFact = _strokeWidth + (_lineWidth/2)
+            canvasBuffer?.drawRect(x1 + addFact, y1 + addFact, x2 - addFact, y2 - addFact, paint)
 
-                paint.style = Paint.Style.STROKE
+            addFact = _strokeWidth + _lineWidth
+            paint.color = color
+            paint.style = Paint.Style.FILL
+            canvasBuffer?.drawRect(x1 + addFact, y1 + addFact, x2 - addFact, y2 - addFact, paint)
 
-                paint.strokeWidth = strokeWidth
-                paint.color = strokeColor
-                var addFact = strokeWidth / 2
-                canva.drawRect(0 + addFact, 0 + addFact, w - addFact, h - addFact, paint)
-
-                paint.color = lineColor
-                paint.strokeWidth = lineWidth
-                addFact = strokeWidth + (lineWidth/2)
-                canva.drawRect(0 + addFact, 0 + addFact, w - addFact, h - addFact, paint)
-
-                addFact = strokeWidth + lineWidth
-                paint.color = color
-                paint.style = Paint.Style.FILL
-                canva.drawRect(0 + addFact, 0 + addFact, w - addFact, h - addFact, paint)
-
-                bmp
-            }
-
-            canvasBuffer?.drawBitmap(bitmap, x1 , y1 , paint)
-
-        }else{
+        } else {
             drawRect(x1, y1, x2, y2, color)
         }
 
@@ -318,7 +315,6 @@ class SpanGrid(context: Context) : View(context) {
     fun plotPoint(px: Point, color: Int, strokeColor: Int) {
         history[px] = color
         historyQuad.insert(px)
-        Timber.d("QuadTree Output pixel : $px")
         Timber.d("QuadTree Output history : ${history.size}")
         historyStroke[px] = strokeColor
         setRectRestore(px, color)
@@ -327,8 +323,8 @@ class SpanGrid(context: Context) : View(context) {
     private fun setRectRestore(px: Point, color: Int) {
         val pxx = PointF(px.x + xOff, px.y + yOff)
         if (pxx.x < gridWidth && pxx.y < gridHeight && pxx.x + resolution >= 0 && pxx.y + resolution >= 0) {
-            val xs = getViewFactor(pxx.x) + (lineWidth / 2)
-            val ys = getViewFactor(pxx.y) + (lineWidth / 2)
+            val xs = getViewFactor(pxx.x) + (_lineWidth / 2)
+            val ys = getViewFactor(pxx.y) + (_lineWidth / 2)
 
             val stroke = historyStroke[px]
             if (stroke == null)
@@ -346,21 +342,21 @@ class SpanGrid(context: Context) : View(context) {
         val xs2 = getViewFactor(px2.x + xOff)
         val ys2 = getViewFactor(px2.y + yOff)
 
-        drawLinePx(xs1,ys1,xs2,ys2)
+        drawLinePx(xs1, ys1, xs2, ys2)
     }
 
     private fun drawLines() {
 
         for (xx in -1..gridWidth.toInt() + 1) {
-            val px1 = Point(xx - xOff.toInt(), -1 - yOff.toInt() )
-            val px2 = Point(xx - xOff.toInt() , gridHeight .toInt() - yOff.toInt() + 2)
+            val px1 = Point(xx - xOff.toInt(), -1 - yOff.toInt())
+            val px2 = Point(xx - xOff.toInt(), gridHeight.toInt() - yOff.toInt() + 2)
 
             setLineRestore(px1, px2)
         }
 
         for (yy in -1..gridHeight.toInt() + 1) {
-            val px1 = Point(-1 - xOff.toInt() , yy - yOff.toInt() )
-            val px2 = Point(gridWidth .toInt()  - xOff.toInt() + 2, yy - yOff.toInt())
+            val px1 = Point(-1 - xOff.toInt(), yy - yOff.toInt())
+            val px2 = Point(gridWidth.toInt() - xOff.toInt() + 2, yy - yOff.toInt())
 
             setLineRestore(px1, px2)
         }
@@ -369,13 +365,14 @@ class SpanGrid(context: Context) : View(context) {
     fun removeRect(px: Point) {
         history.remove(px)
         historyStroke.remove(px)
+        historyQuad.remove(px)
         setRectRestore(px, defaultCellColor)
     }
 
     private fun setGridSize() {
         clearCanvas()
-        gridWidth = ((width - lineWidth) / (resolution + lineWidth))
-        gridHeight = ((height - lineWidth) / (resolution + lineWidth))
+        gridWidth = ((width - _lineWidth) / (resolution + _lineWidth))
+        gridHeight = ((height - _lineWidth) / (resolution + _lineWidth))
 
         if (lineEnabled)
             drawLines()
@@ -384,31 +381,31 @@ class SpanGrid(context: Context) : View(context) {
     }
 
     private fun restore() {
-        val w = Int.MAX_VALUE / 2
-        val h = Int.MAX_VALUE / 2
-        val x = 0
-        val y = 0
-        val points = historyQuad.pull(RectangleCentered(
-            x = x.toInt(),
-            y = y.toInt(),
-            w = w.toInt(),
-            h = h.toInt()
-        ))
+        val w = (gridWidth/2) + 2
+        val h = (gridHeight/2) + 2
+        val x = w - xOff - 1
+        val y = h - yOff - 1
+        val points = historyQuad.pull(
+            RectangleCentered(
+                x = x,
+                y = y,
+                w = w,
+                h = h
+            )
+        )
 
-        points.forEach {point->
+        points.forEach { point ->
             history[point]?.let {
                 setRectRestore(point, it)
             }
         }
-
-        Timber.d("QuadTree Output points : ${points.size}")
 
         /*history.forEach() {
             setRectRestore(it.key, it.value)
         }*/
     }
 
-    private fun getViewFactor(c: Float) = (c * (resolution + lineWidth))
+    private fun getViewFactor(c: Float) = (c * (resolution + _lineWidth))
 
     private fun clearCanvas() {
         canvasBuffer?.drawColor(defaultCellColor)

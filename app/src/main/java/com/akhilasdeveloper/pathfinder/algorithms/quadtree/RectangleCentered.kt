@@ -3,7 +3,7 @@ package com.akhilasdeveloper.pathfinder.algorithms.quadtree
 import com.akhilasdeveloper.pathfinder.models.Point
 import com.akhilasdeveloper.pathfinder.models.PointF
 
-data class RectangleCentered(val x: Int, val y: Int, val w: Int, val h: Int) {
+data class RectangleCentered(val x: Float, val y: Float, val w: Float, val h: Float) {
     fun contains(point: Point): Boolean = (point.x >= x - w &&
             point.x <= x + w &&
             point.y >= y - h &&

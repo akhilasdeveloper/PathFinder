@@ -2,7 +2,6 @@ package com.akhilasdeveloper.pathfinder
 
 import android.os.Bundle
 import android.view.Menu
-import android.view.MenuItem
 import android.view.View
 import android.widget.AdapterView
 import android.widget.LinearLayout
@@ -19,7 +18,8 @@ import com.akhilasdeveloper.pathfinder.models.Point
 import com.akhilasdeveloper.pathfinder.models.Square
 import com.akhilasdeveloper.pathfinder.models.nodes
 import com.akhilasdeveloper.pathfinder.views.Keys
-import com.akhilasdeveloper.pathfinder.views.Keys.AIR
+import com.akhilasdeveloper.pathfinder.views.Keys.END
+import com.akhilasdeveloper.pathfinder.views.Keys.START
 import com.akhilasdeveloper.pathfinder.views.SpanGrid
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import kotlinx.coroutines.*
@@ -39,7 +39,18 @@ class MainActivity : AppCompatActivity() {
     internal var gridHash: HashMap<Point, Square> = hashMapOf()
     internal var heapMin: HeapMinHash<Point> = HeapMinHash()
     internal var sleepVal = 0L
+
     private var selectedItem = 0
+        set(value) {
+            field = value
+            setBrushSize()
+        }
+
+    private var brushSize = 1
+        set(value) {
+            field = value
+            setBrushSize()
+        }
 
     private val cellList: ArrayList<CellItem> = arrayListOf()
     private val pathAlgorithmList: ArrayList<String> = arrayListOf()
@@ -80,6 +91,7 @@ class MainActivity : AppCompatActivity() {
         binding.cellSelector.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
             override fun onItemSelected(p0: AdapterView<*>?, p1: View?, p2: Int, p3: Long) {
                 selectedItem = p2
+
             }
 
             override fun onNothingSelected(p0: AdapterView<*>?) {
@@ -174,6 +186,7 @@ class MainActivity : AppCompatActivity() {
         gridCanvasView = SpanGrid(this)
         binding.gridViewHolder.addView(gridCanvasView)
         gridCanvasView.resolution = 30f
+        gridCanvasView.brushSize = brushSize
         gridCanvasView.post {
             gridCanvasView.init()
         }
@@ -326,6 +339,13 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    private fun setBrushSize() {
+        if (getType() == START || getType() == END)
+            gridCanvasView.brushSize = 0
+        else
+            gridCanvasView.brushSize = brushSize
+    }
+
     private fun drawLineHor(x1: Int, x2: Int, y: Int) {
         for (i in x1..x2) {
             runBlocking {
@@ -349,6 +369,7 @@ class MainActivity : AppCompatActivity() {
     internal fun setBit(point: Point, type: Int) {
         val data = getData(point).copyToType(type = type)
         gridHash[point] = data
+
         gridCanvasView.plotPoint(
             point,
             ContextCompat.getColor(this, data.fillColor),

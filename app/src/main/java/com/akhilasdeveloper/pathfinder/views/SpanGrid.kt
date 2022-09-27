@@ -1,7 +1,6 @@
 package com.akhilasdeveloper.pathfinder.views
 
 import android.content.Context
-import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Paint
 import android.view.GestureDetector
@@ -10,11 +9,11 @@ import android.view.ScaleGestureDetector
 import android.view.View
 import androidx.core.content.res.ResourcesCompat
 import com.akhilasdeveloper.pathfinder.R
+import com.akhilasdeveloper.pathfinder.algorithms.quadtree.Node
 import com.akhilasdeveloper.pathfinder.algorithms.quadtree.QuadTree
 import com.akhilasdeveloper.pathfinder.algorithms.quadtree.RectangleCentered
 import com.akhilasdeveloper.pathfinder.models.Point
 import com.akhilasdeveloper.pathfinder.models.PointF
-import timber.log.Timber
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.math.abs
 
@@ -25,8 +24,6 @@ class SpanGrid(context: Context) : View(context) {
     private val MODE_DRAW: Int = -3
 
     private val paint = Paint()
-    private var canvasBuffer: Canvas? = null
-    private var bitmapBuffer: Bitmap? = null
 
     var xOff = 0f
         private set
@@ -47,12 +44,13 @@ class SpanGrid(context: Context) : View(context) {
             this.setGridSize()
         }
 
+    private var points = listOf<Node>()
     private val history = ConcurrentHashMap<Point, Int>()
     private val historyStroke = ConcurrentHashMap<Point, Int>()
     private val defaultCellColor = ResourcesCompat.getColor(context.resources, R.color.empty, null)
-    private val historyQuad = QuadTree(RectangleCentered(0f, 0f, Int.MAX_VALUE.toFloat() , Int.MAX_VALUE.toFloat() ), 4)
+    private val historyQuad =
+        QuadTree(RectangleCentered(0f, 0f, Int.MAX_VALUE.toFloat(), Int.MAX_VALUE.toFloat()), 4)
     private val lineColor = ResourcesCompat.getColor(context.resources, R.color.gray_600, null)
-    private var lineStartPx: Point? = null
 
     var mode: Int = MODE_DRAW
         set(value) {
@@ -62,6 +60,8 @@ class SpanGrid(context: Context) : View(context) {
 
     var isTouched = false
         private set
+
+    var brushSize = 0
 
     var resolution: Float = 0f
         set(value) {
@@ -123,17 +123,19 @@ class SpanGrid(context: Context) : View(context) {
             if (mode == MODE_VIEW && scaleEnabled) {
 
                 val scale = resolution * detector.scaleFactor
-                if (scale in 10f..100f) {
+                if (scale in 20f..150f) {
 
                     _lineWidth *= detector.scaleFactor
                     _strokeWidth *= detector.scaleFactor
 
-                    val fact = (scale - resolution) / ((resolution + _lineWidth) * (scale + _lineWidth))
+                    val fact =
+                        (scale - resolution) / ((resolution + _lineWidth) * (scale + _lineWidth))
 
                     xOff -= detector.focusX * fact
                     yOff -= detector.focusY * fact
 
                     resolution = scale
+
                 }
 
             }
@@ -146,9 +148,6 @@ class SpanGrid(context: Context) : View(context) {
     private val mGestureDetector = GestureDetector(context, mGestureListener)
 
     fun init() {
-        bitmapBuffer = Bitmap.createBitmap(width, height, Bitmap.Config.RGB_565)
-        canvasBuffer = Canvas(bitmapBuffer!!)
-
         setGridSize()
     }
 
@@ -202,19 +201,15 @@ class SpanGrid(context: Context) : View(context) {
             MotionEvent.ACTION_MOVE -> {
                 if (mode == MODE_DRAW) {
                     val px = getPixelDetails(pxF)
-                    lineStartPx?.let { sPx ->
-                        drawLine(sPx.x, sPx.y, px.x, px.y)
-                    }
-                    lineStartPx = px
+                    drawCenterSquare(px.x, px.y, brushSize)
                 }
             }
             MotionEvent.ACTION_UP -> {
                 if (mode == MODE_DRAW) {
                     val px = getPixelDetails(pxF)
-                    mListener?.onEventDown(px)
+                    drawCenterSquare(px.x, px.y, brushSize)
                 }
                 isTouched = false
-                lineStartPx = null
                 setTouchCount(0)
                 mListener?.onEventUp()
             }
@@ -222,41 +217,15 @@ class SpanGrid(context: Context) : View(context) {
         return true
     }
 
-    private fun drawLine(x1: Int, y1: Int, x2: Int, y2: Int) {
-        var x = x1
-        var y = y1
-        val w = x2 - x
-        val h = y2 - y
-        var dx1 = 0
-        var dy1 = 0
-        var dx2 = 0
-        var dy2 = 0
-        if (w < 0) dx1 = -1 else if (w > 0) dx1 = 1
-        if (h < 0) dy1 = -1 else if (h > 0) dy1 = 1
-        if (w < 0) dx2 = -1 else if (w > 0) dx2 = 1
-        var longest = abs(w)
-        var shortest = abs(h)
-        if (longest <= shortest) {
-            longest = abs(h)
-            shortest = abs(w)
-            if (h < 0) dy2 = -1 else if (h > 0) dy2 = 1
-            dx2 = 0
-        }
-        var numerator = longest shr 1
-        for (i in 0..longest) {
+    private fun drawCenterSquare(xc: Int, yc: Int, r: Int) {
+        val x1 = xc - r
+        val y1 = yc - r
+        val x2 = xc + r
+        val y2 = yc + r
 
-            mListener?.onEventMove(Point(x, y))
-
-            numerator += shortest
-            if (numerator >= longest) {
-                numerator -= longest
-                x += dx1
-                y += dy1
-            } else {
-                x += dx2
-                y += dy2
-            }
-        }
+        for (x in x1..x2)
+            for (y in y1..y2)
+                mListener?.onEventMove(Point(x, y))
     }
 
     override fun performClick(): Boolean {
@@ -264,158 +233,157 @@ class SpanGrid(context: Context) : View(context) {
         return true
     }
 
-    private fun drawRect(x1: Float, y1: Float, x2: Float, y2: Float, color: Int) {
-        paint.color = color
-        paint.style = Paint.Style.FILL
-        canvasBuffer?.drawRect(x1, y1, x2, y2, paint)
-    }
-
-    private fun drawLinePx(x1: Float, y1: Float, x2: Float, y2: Float) {
-        paint.color = lineColor
-        paint.strokeWidth = _lineWidth
-        paint.style = Paint.Style.STROKE
-        canvasBuffer?.drawLine(x1, y1, x2, y2, paint)
-    }
-
-    private fun drawRectStroke(
-        x1: Float,
-        y1: Float,
-        x2: Float,
-        y2: Float,
-        color: Int,
-        strokeColor: Int
-    ) {
-
-        if (color != strokeColor) {
-
-            paint.style = Paint.Style.STROKE
-
-            paint.strokeWidth = _strokeWidth
-            paint.color = strokeColor
-            var addFact = _strokeWidth / 2
-            canvasBuffer?.drawRect(x1 + addFact, y1 + addFact, x2 - addFact, y2 - addFact, paint)
-
-            paint.color = lineColor
-            paint.strokeWidth = _lineWidth
-            addFact = _strokeWidth + (_lineWidth/2)
-            canvasBuffer?.drawRect(x1 + addFact, y1 + addFact, x2 - addFact, y2 - addFact, paint)
-
-            addFact = _strokeWidth + _lineWidth
-            paint.color = color
-            paint.style = Paint.Style.FILL
-            canvasBuffer?.drawRect(x1 + addFact, y1 + addFact, x2 - addFact, y2 - addFact, paint)
-
-        } else {
-            drawRect(x1, y1, x2, y2, color)
-        }
-
-
-    }
 
     fun plotPoint(px: Point, color: Int, strokeColor: Int) {
         history[px] = color
         historyQuad.insert(px)
-        Timber.d("QuadTree Output history : ${history.size}")
         historyStroke[px] = strokeColor
-        setRectRestore(px, color)
+        restore()
     }
 
-    private fun setRectRestore(px: Point, color: Int) {
-        val pxx = PointF(px.x + xOff, px.y + yOff)
-        if (pxx.x < gridWidth && pxx.y < gridHeight && pxx.x + resolution >= 0 && pxx.y + resolution >= 0) {
-            val xs = getViewFactor(pxx.x) + (_lineWidth / 2)
-            val ys = getViewFactor(pxx.y) + (_lineWidth / 2)
-
-            val stroke = historyStroke[px]
-            if (stroke == null)
-                drawRect(xs, ys, xs + resolution, ys + resolution, color)
-            else
-                drawRectStroke(xs, ys, xs + resolution, ys + resolution, color, stroke)
-        }
-    }
-
-    private fun setLineRestore(px1: Point, px2: Point) {
-
-        val xs1 = getViewFactor(px1.x + xOff)
-        val ys1 = getViewFactor(px1.y + yOff)
-
-        val xs2 = getViewFactor(px2.x + xOff)
-        val ys2 = getViewFactor(px2.y + yOff)
-
-        drawLinePx(xs1, ys1, xs2, ys2)
-    }
-
-    private fun drawLines() {
-
-        for (xx in -1..gridWidth.toInt() + 1) {
-            val px1 = Point(xx - xOff.toInt(), -1 - yOff.toInt())
-            val px2 = Point(xx - xOff.toInt(), gridHeight.toInt() - yOff.toInt() + 2)
-
-            setLineRestore(px1, px2)
-        }
-
-        for (yy in -1..gridHeight.toInt() + 1) {
-            val px1 = Point(-1 - xOff.toInt(), yy - yOff.toInt())
-            val px2 = Point(gridWidth.toInt() - xOff.toInt() + 2, yy - yOff.toInt())
-
-            setLineRestore(px1, px2)
-        }
-    }
 
     fun removeRect(px: Point) {
         history.remove(px)
         historyStroke.remove(px)
         historyQuad.remove(px)
-        setRectRestore(px, defaultCellColor)
+        restore()
     }
 
     private fun setGridSize() {
-        clearCanvas()
         gridWidth = ((width - _lineWidth) / (resolution + _lineWidth))
         gridHeight = ((height - _lineWidth) / (resolution + _lineWidth))
 
-        if (lineEnabled)
-            drawLines()
         restore()
-        postInvalidate()
     }
 
     private fun restore() {
-        val w = (gridWidth/2) + 2
-        val h = (gridHeight/2) + 2
+        val w = (gridWidth / 2) + 2
+        val h = (gridHeight / 2) + 2
         val x = w - xOff - 1
         val y = h - yOff - 1
-        val points = historyQuad.pull(
+        points = historyQuad.pull(
             RectangleCentered(
                 x = x,
                 y = y,
                 w = w,
                 h = h
             )
-        )
+        ).map {
 
-        points.forEach { point ->
-            history[point]?.let {
-                setRectRestore(point, it)
-            }
+            val xs = getViewFactor(it.x + xOff) + (_lineWidth / 2)
+            val ys = getViewFactor(it.y + yOff) + (_lineWidth / 2)
+            val fill = history[it] ?: 0
+            val stroke = historyStroke[it] ?: fill
+
+            Node(
+                x1 = xs,
+                y1 = ys,
+                x2 = xs + resolution,
+                y2 = ys + resolution,
+                fill = fill,
+                stroke = stroke
+            )
         }
-
-        /*history.forEach() {
-            setRectRestore(it.key, it.value)
-        }*/
+        invalidate()
     }
 
     private fun getViewFactor(c: Float) = (c * (resolution + _lineWidth))
 
-    private fun clearCanvas() {
-        canvasBuffer?.drawColor(defaultCellColor)
+    private fun Canvas.drawLines(x1: Float, y1: Float, x2: Float, y2: Float) {
+        val xs1 = getViewFactor(x1)
+        val ys1 = getViewFactor(y1)
+
+        val xs2 = getViewFactor(x2)
+        val ys2 = getViewFactor(y2)
+
+        paint.color = lineColor
+        paint.strokeWidth = _lineWidth
+        paint.style = Paint.Style.STROKE
+        this.drawLine(xs1, ys1, xs2, ys2, paint)
+    }
+
+    private fun Canvas.drawGridLines() {
+        drawColor(defaultCellColor)
+
+        val factX = -xOff.toInt() + xOff
+        val factY = -yOff.toInt() + yOff
+        if (lineEnabled) {
+            for (xx in -1..gridWidth.toInt() + 1) {
+
+                drawLines(
+                    xx + factX,
+                    -1 + factY,
+                    xx + factX,
+                    gridHeight.toInt() + factY + 2
+                )
+
+            }
+
+            for (yy in -1..gridHeight.toInt() + 1) {
+
+                drawLines(
+                    -1 + factX,
+                    yy + factY,
+                    gridWidth.toInt() + factX + 2,
+                    yy + factY
+                )
+
+            }
+        }
+    }
+
+    private fun Canvas.drawGridPoints() {
+        points.forEach { px ->
+
+                if (px.stroke == px.fill) {
+                    paint.color = px.fill
+                    paint.style = Paint.Style.FILL
+                    this.drawRect(px.x1, px.y1, px.x2, px.y2, paint)
+                } else {
+
+                    paint.style = Paint.Style.STROKE
+
+                    paint.strokeWidth = _strokeWidth
+                    paint.color = px.stroke
+                    var addFact = _strokeWidth / 2
+                    this.drawRect(
+                        px.x1 + addFact,
+                        px.y1 + addFact,
+                        px.x2 - addFact,
+                        px.y2 - addFact,
+                        paint
+                    )
+
+                    paint.color = lineColor
+                    paint.strokeWidth = _lineWidth
+                    addFact = _strokeWidth + (_lineWidth / 2)
+                    this.drawRect(
+                        px.x1 + addFact,
+                        px.y1 + addFact,
+                        px.x2 - addFact,
+                        px.y2 - addFact,
+                        paint
+                    )
+
+                    addFact = _strokeWidth + _lineWidth
+                    paint.color = px.fill
+                    paint.style = Paint.Style.FILL
+                    this.drawRect(
+                        px.x1 + addFact,
+                        px.y1 + addFact,
+                        px.x2 - addFact,
+                        px.y2 - addFact,
+                        paint
+                    )
+                }
+
+        }
     }
 
     override fun onDraw(canvas: Canvas?) {
         canvas?.apply {
-            bitmapBuffer?.let {
-                canvas.drawBitmap(it, 0f, 0f, paint)
-            }
+            drawGridLines()
+            drawGridPoints()
         }
     }
 
@@ -431,3 +399,5 @@ class SpanGrid(context: Context) : View(context) {
         fun onModeChange(mode: Int)
     }
 }
+
+

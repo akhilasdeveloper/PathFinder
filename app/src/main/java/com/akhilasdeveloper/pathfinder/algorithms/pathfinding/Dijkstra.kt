@@ -42,7 +42,6 @@ internal fun MainActivity.findPathDijkstr() {
                     val nodeN = gridHash[n]
                     if (nodeN?.type != Keys.START && nodeN?.type != Keys.END) {
                         setBit(n, Keys.PATH)
-//                        setPath(n)
                         gridCanvasView.play()
                     }
                     n = gridHash[n]?.previous!!
@@ -52,7 +51,6 @@ internal fun MainActivity.findPathDijkstr() {
                 if (gridHash[shortNode]?.distance == Int.MAX_VALUE) break
                 val nodeN = gridHash[shortNode]
                 if (nodeN?.type != Keys.START) {
-//                    setVisited(shortNode)
                     setBit(
                         shortNode,
                         Keys.VISITED

@@ -41,17 +41,15 @@ data class QuadTree(
         if (!boundary.contains(point))
             return false
 
-        if (points.size < capacity && northEast == null) {
+        if (points.contains(point)){
             points.remove(point)
             return true
         }
-        if (northEast == null)
-            subdivide()
 
-        if (northWest?.insert(point) == true) return true
-        if (northEast?.insert(point) == true) return true
-        if (southWest?.insert(point) == true) return true
-        if (southEast?.insert(point) == true) return true
+        if (northWest?.remove(point) == true) return true
+        if (northEast?.remove(point) == true) return true
+        if (southWest?.remove(point) == true) return true
+        if (southEast?.remove(point) == true) return true
 
         return false
 

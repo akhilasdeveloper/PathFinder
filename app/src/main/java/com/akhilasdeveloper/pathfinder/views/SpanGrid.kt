@@ -14,7 +14,6 @@ import com.akhilasdeveloper.pathfinder.algorithms.quadtree.QuadTree
 import com.akhilasdeveloper.pathfinder.algorithms.quadtree.RectangleCentered
 import com.akhilasdeveloper.pathfinder.models.Point
 import com.akhilasdeveloper.pathfinder.models.PointF
-import timber.log.Timber
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.math.abs
 
@@ -25,7 +24,6 @@ class SpanGrid(context: Context) : View(context) {
     private val MODE_DRAW: Int = -3
 
     private val MIN_DISTANCE_MOVED = 50
-    private val MIN_TRANSLATION = 0f
     private val FRICTION = 1.1f
 
     private var maxTranslationX = 0f
@@ -44,6 +42,7 @@ class SpanGrid(context: Context) : View(context) {
         private set
 
     private var touchCount = 0
+
     var scaleEnabled = true
     var spanEnabled = true
     var lineEnabled = true
@@ -89,8 +88,13 @@ class SpanGrid(context: Context) : View(context) {
     private var _lineWidth: Float = 1f
     private var _strokeWidth: Float = 5f
 
+    private var fact = 0f
+
     var gridWidth: Float = 0f
-        private set
+        set(value) {
+            field = value
+            fact = gridWidth / width
+        }
 
     var gridHeight: Float = 0f
         private set
@@ -101,8 +105,6 @@ class SpanGrid(context: Context) : View(context) {
     private var xFlingValue:Float = 0f
         set(value) {
             field = value
-            val fact = gridWidth / width
-
             xOff =  (value * fact)
 
             setGridSize()
@@ -111,13 +113,12 @@ class SpanGrid(context: Context) : View(context) {
     private var yFlingValue:Float = 0f
         set(value) {
             field = value
-            val fact = gridWidth / width
-
             yOff =  (value * fact)
 
             setGridSize()
 
         }
+
 
     val xFling = object : FloatPropertyCompat<SpanGrid>("xFling") {
         override fun getValue(`object`: SpanGrid?): Float {
@@ -156,12 +157,9 @@ class SpanGrid(context: Context) : View(context) {
 
             if (mode == MODE_VIEW && spanEnabled) {
 
-                val fact = gridWidth / width
-
                 xFling.setValue(this@SpanGrid , (xOff - distanceX * fact)/fact)
                 yFling.setValue(this@SpanGrid , (yOff - distanceY * fact)/fact)
 
-                setGridSize()
             }
             return true
         }
@@ -173,24 +171,22 @@ class SpanGrid(context: Context) : View(context) {
             velocityY: Float
         ): Boolean {
 
-            //downEvent : when user puts his finger down on the view
-            //moveEvent : when user lifts his finger at the end of the movement
-            val distanceInX: Float = abs((e2?.rawX) ?: 0f - (e1?.rawX ?: 0f))
-            val distanceInY: Float = abs((e2?.rawY) ?: 0f - (e1?.rawY ?: 0f))
+            if (mode == MODE_VIEW) {
 
-            Timber.d("distanceInX : $distanceInX\ndistanceInY : $distanceInY")
+                val distanceInX: Float = abs((e2?.rawX) ?: 0f - (e1?.rawX ?: 0f))
+                val distanceInY: Float = abs((e2?.rawY) ?: 0f - (e1?.rawY ?: 0f))
 
-            if (distanceInX > MIN_DISTANCE_MOVED) {
-                //Fling Right/Left
-                flingX.setStartVelocity(velocityX)
-                    .setFriction(FRICTION)
-                    .start()
-            }
-            if (distanceInY > MIN_DISTANCE_MOVED) {
-                //Fling Down/Up
-                flingY.setStartVelocity(velocityY)
-                    .setFriction(FRICTION)
-                    .start()
+
+                if (distanceInX > MIN_DISTANCE_MOVED) {
+                    flingX.setStartVelocity(velocityX)
+                        .setFriction(FRICTION)
+                        .start()
+                }
+                if (distanceInY > MIN_DISTANCE_MOVED) {
+                    flingY.setStartVelocity(velocityY)
+                        .setFriction(FRICTION)
+                        .start()
+                }
             }
 
             return true
@@ -210,11 +206,11 @@ class SpanGrid(context: Context) : View(context) {
                     _lineWidth *= detector.scaleFactor
                     _strokeWidth *= detector.scaleFactor
 
-                    val fact =
+                    val factS =
                         (scale - resolution) / ((resolution + _lineWidth) * (scale + _lineWidth))
 
-                    xFling.setValue(this@SpanGrid , (xOff - detector.focusX * fact)/(gridWidth / width))
-                    yFling.setValue(this@SpanGrid , (yOff - detector.focusY * fact)/(gridWidth / width))
+                    xFling.setValue(this@SpanGrid , (xOff - detector.focusX * factS)/fact)
+                    yFling.setValue(this@SpanGrid , (yOff - detector.focusY * factS)/fact)
 
                     resolution = scale
 

@@ -9,6 +9,10 @@ import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.PopupMenu
 import androidx.core.content.ContextCompat
+import androidx.dynamicanimation.animation.DynamicAnimation
+import androidx.dynamicanimation.animation.DynamicAnimation.ViewProperty
+import androidx.dynamicanimation.animation.FlingAnimation
+import androidx.dynamicanimation.animation.FloatPropertyCompat
 import com.akhilasdeveloper.pathfinder.algorithms.HeapMinHash
 import com.akhilasdeveloper.pathfinder.algorithms.pathfinding.findPathDijkstr
 import com.akhilasdeveloper.pathfinder.algorithms.pathfinding.getData
@@ -57,10 +61,13 @@ class MainActivity : AppCompatActivity() {
     private val gridAlgorithmList: ArrayList<String> = arrayListOf()
     private var cellSpinnerAdapter: CellSpinnerAdapter? = null
 
+
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         _binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
+//        val duckFlingAnimationX = FlingAnimation(Point(), DynamicAnimation.TRANSLATION_X)
         init()
         setListeners()
     }
@@ -150,7 +157,6 @@ class MainActivity : AppCompatActivity() {
                 startPont = px
                 setBit(px, type)
 
-                gridCanvasView.play()
             }
             Keys.END -> {
 
@@ -161,7 +167,6 @@ class MainActivity : AppCompatActivity() {
                 endPont = px
                 setBit(px, type)
 
-                gridCanvasView.play()
             }
             Keys.AIR -> {
                 clearBit(px)
@@ -169,11 +174,9 @@ class MainActivity : AppCompatActivity() {
                     startPont = null
                 if (px == endPont)
                     endPont = null
-                gridCanvasView.play()
             }
             else -> {
                 setBit(px, type)
-                gridCanvasView.play()
             }
         }
     }
@@ -246,12 +249,10 @@ class MainActivity : AppCompatActivity() {
         for (i in startPoint.x until xEnd) {
             setBit(Point(i, startPoint.y), Keys.WALL)
             setBit(Point(i, yEnd), Keys.WALL)
-            gridCanvasView.play()
         }
         for (j in startPoint.y until yEnd + 1) {
             setBit(Point(startPoint.x, j), Keys.WALL)
             setBit(Point(xEnd, j), Keys.WALL)
-            gridCanvasView.play()
         }
     }
 
@@ -297,7 +298,6 @@ class MainActivity : AppCompatActivity() {
             val gapHor = rows[randRow]
             gaps.add(Point(gapHor, cutHor))
             clearBit(Point(gapHor, cutHor))
-            gridCanvasView.play()
 
             recursiveMaze(x1, y1, x2, cutHor - 1)
             recursiveMaze(x1, cutHor + 1, x2, y2)
@@ -332,7 +332,6 @@ class MainActivity : AppCompatActivity() {
             val gapVer = cols[randCol]
             gaps.add(Point(cutVer, gapVer))
             clearBit(Point(cutVer, gapVer))
-            gridCanvasView.play()
 
             recursiveMaze(x1, y1, cutVer - 1, y2)
             recursiveMaze(cutVer + 1, y1, x2, y2)
@@ -352,7 +351,6 @@ class MainActivity : AppCompatActivity() {
                 delay(sleepVal)
             }
             setBit(Point(i, y), Keys.WALL)
-            gridCanvasView.play()
         }
     }
 
@@ -362,7 +360,6 @@ class MainActivity : AppCompatActivity() {
                 delay(sleepVal)
             }
             setBit(Point(x, i), Keys.WALL)
-            gridCanvasView.play()
         }
     }
 

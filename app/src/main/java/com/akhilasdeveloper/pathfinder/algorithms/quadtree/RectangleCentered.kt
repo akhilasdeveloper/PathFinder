@@ -4,6 +4,11 @@ import com.akhilasdeveloper.pathfinder.models.Point
 import com.akhilasdeveloper.pathfinder.models.PointF
 
 data class RectangleCentered(val x: Float, val y: Float, val w: Float, val h: Float) {
+    fun contains(point: PointNode): Boolean = (point.x >= x - w &&
+            point.x <= x + w &&
+            point.y >= y - h &&
+            point.y <= y + h)
+
     fun contains(point: Point): Boolean = (point.x >= x - w &&
             point.x <= x + w &&
             point.y >= y - h &&

@@ -3,17 +3,18 @@ package com.akhilasdeveloper.pathfinder.views
 import android.content.Context
 import android.graphics.Canvas
 import android.graphics.Paint
-import android.view.GestureDetector
-import android.view.MotionEvent
-import android.view.ScaleGestureDetector
-import android.view.View
+import android.view.*
 import androidx.core.content.res.ResourcesCompat
+import androidx.dynamicanimation.animation.FlingAnimation
+import androidx.dynamicanimation.animation.FloatPropertyCompat
 import com.akhilasdeveloper.pathfinder.R
 import com.akhilasdeveloper.pathfinder.algorithms.quadtree.Node
+import com.akhilasdeveloper.pathfinder.algorithms.quadtree.PointNode
 import com.akhilasdeveloper.pathfinder.algorithms.quadtree.QuadTree
 import com.akhilasdeveloper.pathfinder.algorithms.quadtree.RectangleCentered
 import com.akhilasdeveloper.pathfinder.models.Point
 import com.akhilasdeveloper.pathfinder.models.PointF
+import timber.log.Timber
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.math.abs
 
@@ -22,6 +23,13 @@ class SpanGrid(context: Context) : View(context) {
 
     private val MODE_VIEW: Int = -2
     private val MODE_DRAW: Int = -3
+
+    private val MIN_DISTANCE_MOVED = 50
+    private val MIN_TRANSLATION = 0f
+    private val FRICTION = 1.1f
+
+    private var maxTranslationX = 0f
+    private var maxTranslationY = 0f
 
     private val paint = Paint()
 
@@ -44,9 +52,7 @@ class SpanGrid(context: Context) : View(context) {
             this.setGridSize()
         }
 
-    private var points = listOf<Node>()
-    private val history = ConcurrentHashMap<Point, Int>()
-    private val historyStroke = ConcurrentHashMap<Point, Int>()
+    private var points = ConcurrentHashMap<Point, Node>()
     private val defaultCellColor = ResourcesCompat.getColor(context.resources, R.color.empty, null)
     private val historyQuad =
         QuadTree(RectangleCentered(0f, 0f, Int.MAX_VALUE.toFloat(), Int.MAX_VALUE.toFloat()), 4)
@@ -57,9 +63,6 @@ class SpanGrid(context: Context) : View(context) {
             field = value
             mListener?.onModeChange(mode)
         }
-
-    var isTouched = false
-        private set
 
     var brushSize = 0
 
@@ -86,7 +89,6 @@ class SpanGrid(context: Context) : View(context) {
     private var _lineWidth: Float = 1f
     private var _strokeWidth: Float = 5f
 
-
     var gridWidth: Float = 0f
         private set
 
@@ -94,6 +96,55 @@ class SpanGrid(context: Context) : View(context) {
         private set
 
     private var mListener: OnGridSelectListener? = null
+
+
+    private var xFlingValue:Float = 0f
+        set(value) {
+            field = value
+            val fact = gridWidth / width
+
+            xOff =  (value * fact)
+
+            setGridSize()
+        }
+
+    private var yFlingValue:Float = 0f
+        set(value) {
+            field = value
+            val fact = gridWidth / width
+
+            yOff =  (value * fact)
+
+            setGridSize()
+
+        }
+
+    val xFling = object : FloatPropertyCompat<SpanGrid>("xFling") {
+        override fun getValue(`object`: SpanGrid?): Float {
+            return `object`?.xFlingValue ?: 0f
+        }
+
+        override fun setValue(`object`: SpanGrid?, value: Float) {
+            `object`?.xFlingValue = value
+        }
+
+    }
+
+    val yFling = object : FloatPropertyCompat<SpanGrid>("yFling") {
+        override fun getValue(`object`: SpanGrid?): Float {
+            return `object`?.yFlingValue ?: 0f
+        }
+
+        override fun setValue(`object`: SpanGrid?, value: Float) {
+            `object`?.yFlingValue = value
+        }
+
+    }
+
+    val flingX = FlingAnimation(this@SpanGrid, xFling)
+    val flingY = FlingAnimation(this@SpanGrid, yFling)
+
+    private var vTracker: VelocityTracker? = null
 
     private val mGestureListener = object : GestureDetector.SimpleOnGestureListener() {
         override fun onScroll(
@@ -107,14 +158,45 @@ class SpanGrid(context: Context) : View(context) {
 
                 val fact = gridWidth / width
 
-                xOff += -distanceX * fact
-                yOff += -distanceY * fact
+                xFling.setValue(this@SpanGrid , (xOff - distanceX * fact)/fact)
+                yFling.setValue(this@SpanGrid , (yOff - distanceY * fact)/fact)
 
                 setGridSize()
             }
             return true
         }
+
+        override fun onFling(
+            e1: MotionEvent?,
+            e2: MotionEvent?,
+            velocityX: Float,
+            velocityY: Float
+        ): Boolean {
+
+            //downEvent : when user puts his finger down on the view
+            //moveEvent : when user lifts his finger at the end of the movement
+            val distanceInX: Float = abs((e2?.rawX) ?: 0f - (e1?.rawX ?: 0f))
+            val distanceInY: Float = abs((e2?.rawY) ?: 0f - (e1?.rawY ?: 0f))
+
+            Timber.d("distanceInX : $distanceInX\ndistanceInY : $distanceInY")
+
+            if (distanceInX > MIN_DISTANCE_MOVED) {
+                //Fling Right/Left
+                flingX.setStartVelocity(velocityX)
+                    .setFriction(FRICTION)
+                    .start()
+            }
+            if (distanceInY > MIN_DISTANCE_MOVED) {
+                //Fling Down/Up
+                flingY.setStartVelocity(velocityY)
+                    .setFriction(FRICTION)
+                    .start()
+            }
+
+            return true
+        }
     }
+
 
     private val scaleListener = object : ScaleGestureDetector.SimpleOnScaleGestureListener() {
 
@@ -131,8 +213,8 @@ class SpanGrid(context: Context) : View(context) {
                     val fact =
                         (scale - resolution) / ((resolution + _lineWidth) * (scale + _lineWidth))
 
-                    xOff -= detector.focusX * fact
-                    yOff -= detector.focusY * fact
+                    xFling.setValue(this@SpanGrid , (xOff - detector.focusX * fact)/(gridWidth / width))
+                    yFling.setValue(this@SpanGrid , (yOff - detector.focusY * fact)/(gridWidth / width))
 
                     resolution = scale
 
@@ -142,18 +224,17 @@ class SpanGrid(context: Context) : View(context) {
 
             return true
         }
+
     }
 
     private val mScaleDetector = ScaleGestureDetector(context, scaleListener)
     private val mGestureDetector = GestureDetector(context, mGestureListener)
 
     fun init() {
+        maxTranslationX = width.toFloat() / 2
+        maxTranslationY = height.toFloat() / 2
+
         setGridSize()
-    }
-
-
-    fun play() {
-        invalidate()
     }
 
     /***
@@ -190,13 +271,19 @@ class SpanGrid(context: Context) : View(context) {
 
         setTouchCount(event.pointerCount)
 
-        isTouched = true
-
         val pxF = PointF(event.x, event.y)
 
         when (event.action) {
             MotionEvent.ACTION_DOWN -> {
+                flingX.cancel()
+                flingY.cancel()
 
+                if (vTracker == null) {
+                    vTracker = VelocityTracker.obtain();
+                } else {
+                    vTracker?.clear();
+                }
+                vTracker?.addMovement(event);
             }
             MotionEvent.ACTION_MOVE -> {
                 if (mode == MODE_DRAW) {
@@ -209,7 +296,7 @@ class SpanGrid(context: Context) : View(context) {
                     val px = getPixelDetails(pxF)
                     drawCenterSquare(px.x, px.y, brushSize)
                 }
-                isTouched = false
+
                 setTouchCount(0)
                 mListener?.onEventUp()
             }
@@ -235,18 +322,31 @@ class SpanGrid(context: Context) : View(context) {
 
 
     fun plotPoint(px: Point, color: Int, strokeColor: Int) {
-        history[px] = color
-        historyQuad.insert(px)
-        historyStroke[px] = strokeColor
-        restore()
+        val pointNode = PointNode(x = px.x, y = px.y, fill = color, stroke = strokeColor)
+        historyQuad.insert(pointNode)
+        if (isPointInCurrentScreen(px)) {
+            addToPoints(pointNode)
+            invalidate()
+        }
     }
 
+    private fun isPointInCurrentScreen(point: Point): Boolean {
+
+        val w = (gridWidth / 2) + 2
+        val h = (gridHeight / 2) + 2
+        val x = w - xOff - 1
+        val y = h - yOff - 1
+
+        return point.x >= x - w &&
+                point.x <= x + w &&
+                point.y >= y - h &&
+                point.y <= y + h
+    }
 
     fun removeRect(px: Point) {
-        history.remove(px)
-        historyStroke.remove(px)
         historyQuad.remove(px)
-        restore()
+        points.remove(px)
+        invalidate()
     }
 
     private fun setGridSize() {
@@ -261,21 +361,30 @@ class SpanGrid(context: Context) : View(context) {
         val h = (gridHeight / 2) + 2
         val x = w - xOff - 1
         val y = h - yOff - 1
-        points = historyQuad.pull(
+        points.clear()
+        historyQuad.pull(
             RectangleCentered(
                 x = x,
                 y = y,
                 w = w,
                 h = h
             )
-        ).map {
+        ).forEach {
+            addToPoints(it)
+        }
+        invalidate()
+    }
 
-            val xs = getViewFactor(it.x + xOff) + (_lineWidth / 2)
-            val ys = getViewFactor(it.y + yOff) + (_lineWidth / 2)
-            val fill = history[it] ?: 0
-            val stroke = historyStroke[it] ?: fill
+    private fun addToPoints(px: PointNode) {
+        val xs = getViewFactor(px.x + xOff) + (_lineWidth / 2)
+        val ys = getViewFactor(px.y + yOff) + (_lineWidth / 2)
+        val fill = px.fill
+        val stroke = px.stroke
 
+        points[Point(x = px.x, y = px.y)] =
             Node(
+                x = px.x,
+                y = px.y,
                 x1 = xs,
                 y1 = ys,
                 x2 = xs + resolution,
@@ -283,8 +392,7 @@ class SpanGrid(context: Context) : View(context) {
                 fill = fill,
                 stroke = stroke
             )
-        }
-        invalidate()
+
     }
 
     private fun getViewFactor(c: Float) = (c * (resolution + _lineWidth))
@@ -333,49 +441,49 @@ class SpanGrid(context: Context) : View(context) {
     }
 
     private fun Canvas.drawGridPoints() {
-        points.forEach { px ->
+        points.forEach { data ->
+            val px = data.value
+            if (px.stroke == px.fill) {
+                paint.color = px.fill
+                paint.style = Paint.Style.FILL
+                this.drawRect(px.x1, px.y1, px.x2, px.y2, paint)
+            } else {
 
-                if (px.stroke == px.fill) {
-                    paint.color = px.fill
-                    paint.style = Paint.Style.FILL
-                    this.drawRect(px.x1, px.y1, px.x2, px.y2, paint)
-                } else {
+                paint.style = Paint.Style.STROKE
 
-                    paint.style = Paint.Style.STROKE
+                paint.strokeWidth = _strokeWidth
+                paint.color = px.stroke
+                var addFact = _strokeWidth / 2
+                this.drawRect(
+                    px.x1 + addFact,
+                    px.y1 + addFact,
+                    px.x2 - addFact,
+                    px.y2 - addFact,
+                    paint
+                )
 
-                    paint.strokeWidth = _strokeWidth
-                    paint.color = px.stroke
-                    var addFact = _strokeWidth / 2
-                    this.drawRect(
-                        px.x1 + addFact,
-                        px.y1 + addFact,
-                        px.x2 - addFact,
-                        px.y2 - addFact,
-                        paint
-                    )
+                paint.color = lineColor
+                paint.strokeWidth = _lineWidth
+                addFact = _strokeWidth + (_lineWidth / 2)
+                this.drawRect(
+                    px.x1 + addFact,
+                    px.y1 + addFact,
+                    px.x2 - addFact,
+                    px.y2 - addFact,
+                    paint
+                )
 
-                    paint.color = lineColor
-                    paint.strokeWidth = _lineWidth
-                    addFact = _strokeWidth + (_lineWidth / 2)
-                    this.drawRect(
-                        px.x1 + addFact,
-                        px.y1 + addFact,
-                        px.x2 - addFact,
-                        px.y2 - addFact,
-                        paint
-                    )
-
-                    addFact = _strokeWidth + _lineWidth
-                    paint.color = px.fill
-                    paint.style = Paint.Style.FILL
-                    this.drawRect(
-                        px.x1 + addFact,
-                        px.y1 + addFact,
-                        px.x2 - addFact,
-                        px.y2 - addFact,
-                        paint
-                    )
-                }
+                addFact = _strokeWidth + _lineWidth
+                paint.color = px.fill
+                paint.style = Paint.Style.FILL
+                this.drawRect(
+                    px.x1 + addFact,
+                    px.y1 + addFact,
+                    px.x2 - addFact,
+                    px.y2 - addFact,
+                    paint
+                )
+            }
 
         }
     }

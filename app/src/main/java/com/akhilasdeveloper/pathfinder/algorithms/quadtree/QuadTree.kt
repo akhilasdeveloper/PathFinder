@@ -2,26 +2,34 @@ package com.akhilasdeveloper.pathfinder.algorithms.quadtree
 
 import com.akhilasdeveloper.pathfinder.models.Point
 import com.akhilasdeveloper.pathfinder.models.PointF
+import java.util.concurrent.ConcurrentHashMap
 
 data class QuadTree(
     val boundary: RectangleCentered,
     val capacity: Int
 ) {
 
-    private val points: MutableSet<Point> = mutableSetOf()
+    private val points = ConcurrentHashMap<Point, PointNode>()
 
     private var northWest: QuadTree? = null
     private var northEast: QuadTree? = null
     private var southWest: QuadTree? = null
     private var southEast: QuadTree? = null
 
-    fun insert(point: Point): Boolean {
+    fun insert(point: PointNode): Boolean {
 
-        if (!boundary.contains(point))
+        val px = Point(x = point.x, y = point.y)
+
+        if (!boundary.contains(px))
             return false
 
+        if (points.keys.contains(px)){
+            points[px] = point
+            return true
+        }
+
         if (points.size < capacity && northEast == null) {
-            points.add(point)
+            points[px] = point
             return true
         }
         if (northEast == null)
@@ -41,7 +49,7 @@ data class QuadTree(
         if (!boundary.contains(point))
             return false
 
-        if (points.contains(point)){
+        if (points.keys.contains(point)){
             points.remove(point)
             return true
         }
@@ -55,13 +63,13 @@ data class QuadTree(
 
     }
 
-    fun pull(range: RectangleCentered, found: ArrayList<Point> = arrayListOf()): ArrayList<Point> {
+    fun pull(range: RectangleCentered, found: ArrayList<PointNode> = arrayListOf()): ArrayList<PointNode> {
 
         if (!boundary.intersects(range))
             return arrayListOf()
         for (p in points) {
-            if (range.contains(p))
-                found.add(p)
+            if (range.contains(p.value))
+                found.add(p.value)
         }
 
         if (northEast == null)

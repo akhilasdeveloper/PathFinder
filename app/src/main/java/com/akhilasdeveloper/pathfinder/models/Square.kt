@@ -7,6 +7,7 @@ import com.akhilasdeveloper.pathfinder.views.Keys
 import com.akhilasdeveloper.pathfinder.views.Keys.AIR
 import com.akhilasdeveloper.pathfinder.views.Keys.PATH
 import com.akhilasdeveloper.pathfinder.views.Keys.VISITED
+import com.akhilasdeveloper.spangridview.models.Point
 
 data class Square(
     var name: String,

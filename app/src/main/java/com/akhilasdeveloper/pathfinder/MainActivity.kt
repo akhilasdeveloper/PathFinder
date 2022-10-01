@@ -9,22 +9,18 @@ import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.PopupMenu
 import androidx.core.content.ContextCompat
-import androidx.dynamicanimation.animation.DynamicAnimation
-import androidx.dynamicanimation.animation.DynamicAnimation.ViewProperty
-import androidx.dynamicanimation.animation.FlingAnimation
-import androidx.dynamicanimation.animation.FloatPropertyCompat
 import com.akhilasdeveloper.pathfinder.algorithms.HeapMinHash
 import com.akhilasdeveloper.pathfinder.algorithms.pathfinding.findPathDijkstr
 import com.akhilasdeveloper.pathfinder.algorithms.pathfinding.getData
 import com.akhilasdeveloper.pathfinder.databinding.ActivityMainBinding
 import com.akhilasdeveloper.pathfinder.models.CellItem
-import com.akhilasdeveloper.pathfinder.models.Point
 import com.akhilasdeveloper.pathfinder.models.Square
 import com.akhilasdeveloper.pathfinder.models.nodes
 import com.akhilasdeveloper.pathfinder.views.Keys
 import com.akhilasdeveloper.pathfinder.views.Keys.END
 import com.akhilasdeveloper.pathfinder.views.Keys.START
-import com.akhilasdeveloper.pathfinder.views.SpanGrid
+import com.akhilasdeveloper.spangridview.SpanGridView
+import com.akhilasdeveloper.spangridview.models.Point
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import kotlinx.coroutines.*
 import kotlin.math.floor
@@ -36,7 +32,7 @@ class MainActivity : AppCompatActivity() {
     private var _binding: ActivityMainBinding? = null
     private val binding get() = _binding!!
     private lateinit var bottomSheetBehavior: BottomSheetBehavior<LinearLayout>
-    internal lateinit var gridCanvasView: SpanGrid
+    internal lateinit var gridCanvasView: SpanGridView
     internal var startPont: Point? = null
     internal var endPont: Point? = null
     private var gaps = mutableListOf<Point>()
@@ -73,7 +69,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun setListeners() {
-        gridCanvasView.setGridSelectListener(object : SpanGrid.OnGridSelectListener {
+        gridCanvasView.setGridSelectListener(object : SpanGridView.OnGridSelectListener {
 
             override fun onEventMove(px: Point) {
                 plotPointOnTouch(px)
@@ -186,7 +182,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun init() {
         bottomSheetBehavior = BottomSheetBehavior.from(binding.bottomSheet)
-        gridCanvasView = SpanGrid(this)
+        gridCanvasView = SpanGridView(this)
         binding.gridViewHolder.addView(gridCanvasView)
         gridCanvasView.resolution = 30f
         gridCanvasView.brushSize = brushSize

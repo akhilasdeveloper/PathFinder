@@ -1,4 +1,4 @@
-package com.akhilasdeveloper.pathfinder.algorithms.quadtree
+package com.akhilasdeveloper.spangridview.algorithms.models
 
 data class Node(
     var x:Int,

@@ -1,7 +1,6 @@
-package com.akhilasdeveloper.pathfinder.algorithms.quadtree
+package com.akhilasdeveloper.spangridview.algorithms.models
 
-import com.akhilasdeveloper.pathfinder.models.Point
-import com.akhilasdeveloper.pathfinder.models.PointF
+import com.akhilasdeveloper.spangridview.models.Point
 
 data class RectangleCentered(val x: Float, val y: Float, val w: Float, val h: Float) {
     fun contains(point: PointNode): Boolean = (point.x >= x - w &&

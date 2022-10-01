@@ -1,7 +1,8 @@
-package com.akhilasdeveloper.pathfinder.algorithms.quadtree
+package com.akhilasdeveloper.spangridview.algorithms
 
-import com.akhilasdeveloper.pathfinder.models.Point
-import com.akhilasdeveloper.pathfinder.models.PointF
+import com.akhilasdeveloper.spangridview.algorithms.models.PointNode
+import com.akhilasdeveloper.spangridview.algorithms.models.RectangleCentered
+import com.akhilasdeveloper.spangridview.models.Point
 import java.util.concurrent.ConcurrentHashMap
 
 data class QuadTree(

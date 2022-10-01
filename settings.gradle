@@ -1,2 +1,3 @@
 rootProject.name = "PathFinder"
 include ':app'
+include ':SpanGridView'

@@ -1,24 +1,23 @@
-package com.akhilasdeveloper.pathfinder.views
+package com.akhilasdeveloper.spangridview
 
 import android.content.Context
 import android.graphics.Canvas
+import android.graphics.Color
 import android.graphics.Paint
 import android.view.*
-import androidx.core.content.res.ResourcesCompat
 import androidx.dynamicanimation.animation.FlingAnimation
 import androidx.dynamicanimation.animation.FloatPropertyCompat
-import com.akhilasdeveloper.pathfinder.R
-import com.akhilasdeveloper.pathfinder.algorithms.quadtree.Node
-import com.akhilasdeveloper.pathfinder.algorithms.quadtree.PointNode
-import com.akhilasdeveloper.pathfinder.algorithms.quadtree.QuadTree
-import com.akhilasdeveloper.pathfinder.algorithms.quadtree.RectangleCentered
-import com.akhilasdeveloper.pathfinder.models.Point
-import com.akhilasdeveloper.pathfinder.models.PointF
+import com.akhilasdeveloper.spangridview.algorithms.QuadTree
+import com.akhilasdeveloper.spangridview.algorithms.models.Node
+import com.akhilasdeveloper.spangridview.algorithms.models.PointNode
+import com.akhilasdeveloper.spangridview.algorithms.models.RectangleCentered
+import com.akhilasdeveloper.spangridview.models.Point
+import com.akhilasdeveloper.spangridview.models.PointF
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.math.abs
 
 
-class SpanGrid(context: Context) : View(context) {
+class SpanGridView(context: Context) : View(context) {
 
     private val MODE_VIEW: Int = -2
     private val MODE_DRAW: Int = -3
@@ -52,10 +51,10 @@ class SpanGrid(context: Context) : View(context) {
         }
 
     private var points = ConcurrentHashMap<Point, Node>()
-    private val defaultCellColor = ResourcesCompat.getColor(context.resources, R.color.empty, null)
+    private val defaultCellColor = Color.DKGRAY
     private val historyQuad =
         QuadTree(RectangleCentered(0f, 0f, Int.MAX_VALUE.toFloat(), Int.MAX_VALUE.toFloat()), 4)
-    private val lineColor = ResourcesCompat.getColor(context.resources, R.color.gray_600, null)
+    private val lineColor = Color.LTGRAY
 
     var mode: Int = MODE_DRAW
         set(value) {
@@ -120,30 +119,30 @@ class SpanGrid(context: Context) : View(context) {
         }
 
 
-    val xFling = object : FloatPropertyCompat<SpanGrid>("xFling") {
-        override fun getValue(`object`: SpanGrid?): Float {
+    val xFling = object : FloatPropertyCompat<SpanGridView>("xFling") {
+        override fun getValue(`object`: SpanGridView?): Float {
             return `object`?.xFlingValue ?: 0f
         }
 
-        override fun setValue(`object`: SpanGrid?, value: Float) {
+        override fun setValue(`object`: SpanGridView?, value: Float) {
             `object`?.xFlingValue = value
         }
 
     }
 
-    val yFling = object : FloatPropertyCompat<SpanGrid>("yFling") {
-        override fun getValue(`object`: SpanGrid?): Float {
+    val yFling = object : FloatPropertyCompat<SpanGridView>("yFling") {
+        override fun getValue(`object`: SpanGridView?): Float {
             return `object`?.yFlingValue ?: 0f
         }
 
-        override fun setValue(`object`: SpanGrid?, value: Float) {
+        override fun setValue(`object`: SpanGridView?, value: Float) {
             `object`?.yFlingValue = value
         }
 
     }
 
-    val flingX = FlingAnimation(this@SpanGrid, xFling)
-    val flingY = FlingAnimation(this@SpanGrid, yFling)
+    val flingX = FlingAnimation(this@SpanGridView, xFling)
+    val flingY = FlingAnimation(this@SpanGridView, yFling)
 
     private var vTracker: VelocityTracker? = null
 
@@ -157,24 +156,24 @@ class SpanGrid(context: Context) : View(context) {
 
             if (mode == MODE_VIEW && spanEnabled) {
 
-                xFling.setValue(this@SpanGrid , (xOff - distanceX * fact)/fact)
-                yFling.setValue(this@SpanGrid , (yOff - distanceY * fact)/fact)
+                xFling.setValue(this@SpanGridView , (xOff - distanceX * fact)/fact)
+                yFling.setValue(this@SpanGridView , (yOff - distanceY * fact)/fact)
 
             }
             return true
         }
 
         override fun onFling(
-            e1: MotionEvent?,
-            e2: MotionEvent?,
+            e1: MotionEvent,
+            e2: MotionEvent,
             velocityX: Float,
             velocityY: Float
         ): Boolean {
 
             if (mode == MODE_VIEW) {
 
-                val distanceInX: Float = abs((e2?.rawX) ?: 0f - (e1?.rawX ?: 0f))
-                val distanceInY: Float = abs((e2?.rawY) ?: 0f - (e1?.rawY ?: 0f))
+                val distanceInX: Float = abs(e2.rawX - e1.rawX )
+                val distanceInY: Float = abs(e2.rawY - e1.rawY )
 
 
                 if (distanceInX > MIN_DISTANCE_MOVED) {
@@ -209,8 +208,8 @@ class SpanGrid(context: Context) : View(context) {
                     val factS =
                         (scale - resolution) / ((resolution + _lineWidth) * (scale + _lineWidth))
 
-                    xFling.setValue(this@SpanGrid , (xOff - detector.focusX * factS)/fact)
-                    yFling.setValue(this@SpanGrid , (yOff - detector.focusY * factS)/fact)
+                    xFling.setValue(this@SpanGridView , (xOff - detector.focusX * factS)/fact)
+                    yFling.setValue(this@SpanGridView , (yOff - detector.focusY * factS)/fact)
 
                     resolution = scale
 

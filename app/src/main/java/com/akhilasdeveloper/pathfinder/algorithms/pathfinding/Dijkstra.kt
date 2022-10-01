@@ -1,9 +1,9 @@
 package com.akhilasdeveloper.pathfinder.algorithms.pathfinding
 
 import com.akhilasdeveloper.pathfinder.MainActivity
-import com.akhilasdeveloper.pathfinder.models.Point
 import com.akhilasdeveloper.pathfinder.models.nodes
 import com.akhilasdeveloper.pathfinder.views.Keys
+import com.akhilasdeveloper.spangridview.models.Point
 import kotlinx.coroutines.*
 
 

@@ -1,4 +1,4 @@
-package com.akhilasdeveloper.pathfinder.models
+package com.akhilasdeveloper.spangridview.models
 
 data class Point(
     var x:Int = 0,

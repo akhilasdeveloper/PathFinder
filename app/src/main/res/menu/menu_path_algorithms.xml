@@ -5,4 +5,8 @@
         android:id="@+id/digkstra"
         android:title="Digkstra" />
 
+    <item
+        android:id="@+id/a_star"
+        android:title="A*" />
+
 </menu>

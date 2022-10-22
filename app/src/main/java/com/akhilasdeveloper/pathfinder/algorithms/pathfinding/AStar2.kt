@@ -5,9 +5,11 @@ import com.akhilasdeveloper.pathfinder.models.nodes
 import com.akhilasdeveloper.pathfinder.views.Keys
 import com.akhilasdeveloper.spangridview.models.Point
 import kotlinx.coroutines.*
+import kotlin.math.abs
+import kotlin.math.sqrt
 
 
-internal fun MainActivity.findPathDijkstr() {
+internal fun MainActivity.findAStar() {
 
     CoroutineScope(Dispatchers.Default).launch {
 
@@ -69,11 +71,16 @@ internal fun MainActivity.findPathDijkstr() {
              * if the distance is greater, then assign short distance + 1 to neighbours
              */
             neighbours.forEach {
-                val dis = gridHash[shortNode]!!.distance + gridHash[it]!!.weight
-                if (dis < gridHash[it]!!.distance) {
-                    gridHash[it]!!.distance = dis
-                    heapMin.push(it, gridHash)
+
+                val tempG = gridHash[shortNode]!!.g + gridHash[it]!!.weight
+                if (tempG < gridHash[it]!!.g) {
+                    gridHash[it]!!.g = tempG
                 }
+
+                gridHash[it]!!.h = heuristic(it, endP)
+                gridHash[it]!!.distance = gridHash[it]!!.g + gridHash[it]!!.h
+                heapMin.push(it, gridHash)
+
                 gridHash[it]!!.previous = shortNode
             }
 
@@ -82,6 +89,8 @@ internal fun MainActivity.findPathDijkstr() {
 
     }
 }
+
+private fun heuristic(nei: Point, endP: Point): Int = abs(nei.x - endP.x) + abs(nei.y - endP.y)
 
 /**
  * Function to find neighbours (top, left, bottom, right) of the short distance node
@@ -120,5 +129,3 @@ private fun MainActivity.getNeighbours(
     }
     return n.toTypedArray()
 }
-
-internal fun MainActivity.getData(index: Point) = gridHash.getOrPut(index) { nodes() }

@@ -10,7 +10,10 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.PopupMenu
 import androidx.core.content.ContextCompat
 import com.akhilasdeveloper.pathfinder.algorithms.HeapMinHash
+import com.akhilasdeveloper.pathfinder.algorithms.pathfinding.*
+import com.akhilasdeveloper.pathfinder.algorithms.pathfinding.findPathAStar
 import com.akhilasdeveloper.pathfinder.algorithms.pathfinding.findPathDijkstr
+import com.akhilasdeveloper.pathfinder.algorithms.pathfinding.generateRecursiveMaze
 import com.akhilasdeveloper.pathfinder.algorithms.pathfinding.getData
 import com.akhilasdeveloper.pathfinder.databinding.ActivityMainBinding
 import com.akhilasdeveloper.pathfinder.models.CellItem
@@ -35,10 +38,13 @@ class MainActivity : AppCompatActivity() {
     internal lateinit var gridCanvasView: SpanGridView
     internal var startPont: Point? = null
     internal var endPont: Point? = null
-    private var gaps = mutableListOf<Point>()
+    internal var gaps = mutableListOf<Point>()
     internal var gridHash: HashMap<Point, Square> = hashMapOf()
+    private var xHash: HashMap<Int, Int> = hashMapOf()
+    private var yHash: HashMap<Int, Int> = hashMapOf()
     internal var heapMin: HeapMinHash<Point> = HeapMinHash()
     internal var sleepVal = 0L
+    internal var sleepValPath = 5L
 
     private var selectedItem = 0
         set(value) {
@@ -46,7 +52,7 @@ class MainActivity : AppCompatActivity() {
             setBrushSize()
         }
 
-    private var brushSize = 1
+    private var brushSize = 2
         set(value) {
             field = value
             setBrushSize()
@@ -58,12 +64,10 @@ class MainActivity : AppCompatActivity() {
     private var cellSpinnerAdapter: CellSpinnerAdapter? = null
 
 
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         _binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
-//        val duckFlingAnimationX = FlingAnimation(Point(), DynamicAnimation.TRANSLATION_X)
         init()
         setListeners()
     }
@@ -71,14 +75,7 @@ class MainActivity : AppCompatActivity() {
     private fun setListeners() {
         gridCanvasView.setGridSelectListener(object : SpanGridView.OnGridSelectListener {
 
-            override fun onEventMove(px: Point) {
-                plotPointOnTouch(px)
-            }
-
-            override fun onEventUp() {
-            }
-
-            override fun onEventDown(px: Point) {
+            override fun onDraw(px: Point) {
                 plotPointOnTouch(px)
             }
 
@@ -120,6 +117,16 @@ class MainActivity : AppCompatActivity() {
                                 Toast.LENGTH_SHORT
                             ).show()
                     }
+                    R.id.a_star -> {
+                        if (startPont != null && endPont != null)
+                            findAStar()
+                        else
+                            Toast.makeText(
+                                this,
+                                "Please select start point and end point",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                    }
                 }
                 true
             }
@@ -133,7 +140,7 @@ class MainActivity : AppCompatActivity() {
             popupMenu.setOnMenuItemClickListener { menuItem ->
                 when (menuItem.itemId) {
                     R.id.recursive -> {
-                        generateMaze()
+                        generateRecursiveMaze()
                     }
                 }
                 true
@@ -182,9 +189,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun init() {
         bottomSheetBehavior = BottomSheetBehavior.from(binding.bottomSheet)
-        gridCanvasView = SpanGridView(this)
-        binding.gridViewHolder.addView(gridCanvasView)
-        gridCanvasView.resolution = 30f
+        gridCanvasView = binding.gridViewHolder
         gridCanvasView.brushSize = brushSize
         gridCanvasView.post {
             gridCanvasView.init()
@@ -216,132 +221,14 @@ class MainActivity : AppCompatActivity() {
         return true
     }
 
-
-    private fun generateMaze() {
-        CoroutineScope(Dispatchers.Default).launch {
-            var gHeight = gridCanvasView.gridHeight.toInt()
-            var gWidth = gridCanvasView.gridWidth.toInt()
-            val startPoint = gridCanvasView.startPoint
-
-            gHeight = if (gHeight % 2 == 0) gHeight else gHeight - 1
-            gWidth = if (gWidth % 2 == 0) gWidth else gWidth - 1
-
-            generateBorder(startPoint, gWidth, gHeight)
-            recursiveMaze(
-                startPoint.x + 1,
-                startPoint.y + 1,
-                gWidth + startPoint.x - 1,
-                gHeight + startPoint.y - 1
-            )
-
-        }
-    }
-
-    private fun generateBorder(startPoint: Point, gWidth: Int, gHeight: Int) {
-
-        val xEnd = gWidth + startPoint.x
-        val yEnd = gHeight + startPoint.y
-
-        for (i in startPoint.x until xEnd) {
-            setBit(Point(i, startPoint.y), Keys.WALL)
-            setBit(Point(i, yEnd), Keys.WALL)
-        }
-        for (j in startPoint.y until yEnd + 1) {
-            setBit(Point(startPoint.x, j), Keys.WALL)
-            setBit(Point(xEnd, j), Keys.WALL)
-        }
-    }
-
-    private fun recursiveMaze(x1: Int, y1: Int, x2: Int, y2: Int) {
-
-        if (x2 - x1 < 2 || y2 - y1 < 2)
-            return
-
-        val isHorizontal =
-            if (x2 - x1 < y2 - y1) true else if (x2 - x1 > y2 - y1) false else Random.nextBoolean()
-
-        val rows = mutableListOf<Int>()
-        val cols = mutableListOf<Int>()
-
-        if (isHorizontal) {
-
-            for (i in x1 until x2 + 1 step 2)
-                rows.add(i)
-
-            for (i in y1 + 1 until y2 step 2)
-                cols.add(i)
-
-            val randRow = floor(Math.random() * rows.size).toInt()
-            var randCol = floor(Math.random() * cols.size).toInt()
-
-            var cutHor = cols[randCol]
-
-            while (gaps.contains(Point(x1 - 1, cutHor)) || gaps.contains(
-                    Point(
-                        x2 + 1,
-                        cutHor
-                    )
-                )
-            ) {
-                if (cols.size < 3)
-                    return
-                randCol = floor(Math.random() * cols.size).toInt()
-                cutHor = cols[randCol]
-            }
-
-            drawLineHor(x1, x2, cutHor)
-
-            val gapHor = rows[randRow]
-            gaps.add(Point(gapHor, cutHor))
-            clearBit(Point(gapHor, cutHor))
-
-            recursiveMaze(x1, y1, x2, cutHor - 1)
-            recursiveMaze(x1, cutHor + 1, x2, y2)
-        } else {
-
-            for (i in x1 + 1 until x2 step 2)
-                rows.add(i)
-
-            for (i in y1 until y2 + 1 step 2)
-                cols.add(i)
-
-            var randRow = floor(Math.random() * rows.size).toInt()
-            val randCol = floor(Math.random() * cols.size).toInt()
-
-            var cutVer = rows[randRow]
-
-            while (gaps.contains(
-                    Point(
-                        cutVer,
-                        y1 - 1
-                    )
-                ) || gaps.contains(Point(cutVer, y2 + 1))
-            ) {
-                if (rows.size < 3)
-                    return
-                randRow = floor(Math.random() * rows.size).toInt()
-                cutVer = rows[randRow]
-            }
-
-            drawLineVer(y1, y2, cutVer)
-
-            val gapVer = cols[randCol]
-            gaps.add(Point(cutVer, gapVer))
-            clearBit(Point(cutVer, gapVer))
-
-            recursiveMaze(x1, y1, cutVer - 1, y2)
-            recursiveMaze(cutVer + 1, y1, x2, y2)
-        }
-    }
-
     private fun setBrushSize() {
         if (getType() == START || getType() == END)
-            gridCanvasView.brushSize = 0
+            gridCanvasView.brushSize = 1
         else
             gridCanvasView.brushSize = brushSize
     }
 
-    private fun drawLineHor(x1: Int, x2: Int, y: Int) {
+    internal fun drawLineHor(x1: Int, x2: Int, y: Int) {
         for (i in x1..x2) {
             runBlocking {
                 delay(sleepVal)
@@ -350,7 +237,7 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun drawLineVer(y1: Int, y2: Int, x: Int) {
+    internal fun drawLineVer(y1: Int, y2: Int, x: Int) {
         for (i in y1..y2) {
             runBlocking {
                 delay(sleepVal)
@@ -360,6 +247,8 @@ class MainActivity : AppCompatActivity() {
     }
 
     internal fun setBit(point: Point, type: Int) {
+        setXY(point)
+
         val data = getData(point).copyToType(type = type)
         gridHash[point] = data
 
@@ -370,9 +259,76 @@ class MainActivity : AppCompatActivity() {
         )
     }
 
-    private fun clearBit(point: Point) {
+    internal fun clearBit(point: Point) {
+        clearXY(point)
         gridHash.remove(point)
         gridCanvasView.removeRect(point)
+    }
+
+    private fun setXY(point: Point) {
+        if (gridHash[point] == null) {
+            val x = xHash[point.x] ?: 0
+            val y = yHash[point.y] ?: 0
+            xHash[point.x] = x + 1
+            yHash[point.y] = y + 1
+        }
+    }
+
+    private fun clearXY(point: Point) {
+        gridHash[point]?.let {
+            xHash[point.x]?.let {
+                if (it <= 1)
+                    xHash.remove(point.x)
+                else
+                    xHash[point.x] = it - 1
+            }
+            yHash[point.y]?.let {
+                if (it <= 1)
+                    yHash.remove(point.y)
+                else
+                    yHash[point.y] = it - 1
+            }
+        }
+    }
+
+    internal fun getMinXY(): Point {
+        xHash.keys.toIntArray().minOrNull()?.let { x ->
+            yHash.keys.toIntArray().minOrNull()?.let { y ->
+                return Point(x, y)
+            }
+        }
+
+        return Point(0,0)
+    }
+
+    internal fun getMaxXY(): Point {
+        xHash.keys.toIntArray().maxOrNull()?.let { x ->
+            yHash.keys.toIntArray().maxOrNull()?.let { y ->
+                return Point(x, y)
+            }
+        }
+
+        return Point(0,0)
+    }
+
+    internal fun createBorder() {
+        var minPoint = getMinXY()
+        var maxPoint = getMaxXY()
+
+        minPoint = minPoint.apply {
+            x -= 1
+            y -= 1
+        }
+
+        maxPoint = maxPoint.apply {
+            x += 1
+            y += 1
+        }
+
+        val width = maxPoint.x - minPoint.x
+        val height = maxPoint.y - minPoint.y
+
+        generateBorder(minPoint, width, height)
     }
 
 }

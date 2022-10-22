@@ -1,5 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources xmlns:tools="http://schemas.android.com/tools">
-    <!-- Base application theme. -->
+
     <style name="Theme.PathFinder" parent="Theme.MaterialComponents.DayNight.NoActionBar">
         <!-- Primary brand color. -->
         <item name="colorPrimary">@color/purple_500</item>
@@ -14,11 +15,5 @@
         <item name="android:navigationBarColor">@color/statusBarColor</item>
         <!-- Customize your theme here. -->
         <item name="android:forceDarkAllowed">false</item>
-    </style>
-    <style name="Widget.Theme.Algorithms.MyView" parent="">
-        <item name="android:background">@color/gray_400</item>
-    </style>
-    <style name="tool_bar_title" parent="@style/Base.TextAppearance.AppCompat.Title">
-        <item name="android:textSize">16sp</item>
     </style>
 </resources>

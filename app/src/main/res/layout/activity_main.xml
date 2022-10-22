@@ -12,39 +12,15 @@
         android:layout_height="match_parent"
         android:orientation="vertical">
 
-        <!--<LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:padding="10dp"
-            android:gravity="center_vertical"
-            >
-
-            <Button
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Find Path"
-                android:id="@+id/algorithmSelector"/>
-
-            <View
-                android:layout_width="0dp"
-                android:layout_height="0dp"
-                android:layout_weight="1"/>
-
-            <Button
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Generate Maze"
-                android:id="@+id/gridGeneratorSelector"/>
-
-        </LinearLayout>-->
-
-        <LinearLayout
+        <com.akhilasdeveloper.spangridview.SpanGridView
             android:layout_width="match_parent"
             android:layout_height="0dp"
             android:id="@+id/gridViewHolder"
-            android:orientation="vertical"
-            android:layout_weight="1"/>
+            app:lineColor="@color/line_color"
+            app:scale=".3"
+            app:lineWidth="1"
+            android:layout_weight="1"
+            app:gridColor="@color/empty" />
 
         <LinearLayout
             android:layout_width="match_parent"

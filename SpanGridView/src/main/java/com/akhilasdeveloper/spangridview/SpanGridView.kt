@@ -2,9 +2,10 @@ package com.akhilasdeveloper.spangridview
 
 import android.content.Context
 import android.graphics.Canvas
-import android.graphics.Color
 import android.graphics.Paint
+import android.util.AttributeSet
 import android.view.*
+import androidx.core.content.res.ResourcesCompat
 import androidx.dynamicanimation.animation.FlingAnimation
 import androidx.dynamicanimation.animation.FloatPropertyCompat
 import com.akhilasdeveloper.spangridview.algorithms.QuadTree
@@ -17,7 +18,29 @@ import java.util.concurrent.ConcurrentHashMap
 import kotlin.math.abs
 
 
-class SpanGridView(context: Context) : View(context) {
+class SpanGridView(
+    context: Context,
+    attributeSet: AttributeSet?,
+    defStyleAttr: Int,
+    defStyleRes: Int
+) : View(context, attributeSet, defStyleAttr, defStyleRes) {
+
+    constructor(context: Context, attributeSet: AttributeSet, defStyleAttr: Int) : this(
+        context,
+        attributeSet,
+        defStyleAttr,
+        0
+    ) {
+        init(attributeSet)
+    }
+
+    constructor(context: Context, attributeSet: AttributeSet) : this(context, attributeSet, 0, 0) {
+        init(attributeSet)
+    }
+
+    constructor(context: Context) : this(context, null, 0, 0) {
+        init(null)
+    }
 
     private val MODE_VIEW: Int = -2
     private val MODE_DRAW: Int = -3
@@ -28,20 +51,22 @@ class SpanGridView(context: Context) : View(context) {
     private var maxTranslationX = 0f
     private var maxTranslationY = 0f
 
-    private val paint = Paint()
-
-    var xOff = 0f
-        private set
-
-    var yOff = 0f
-        private set
-
-    var startPoint: Point = Point(0, 0)
-        get() = getPixelDetails(PointF(0f, 0f))
-        private set
+    private val scaleLimitStart = 20f
+    private val scaleLimitEnd = 150f
 
     private var touchCount = 0
+    private var fact = 0f
 
+    private val paint = Paint().apply {
+        isAntiAlias = true
+
+    }
+    private var mListener: OnGridSelectListener? = null
+    private var points = ConcurrentHashMap<Point, Node>()
+    private val historyQuad = QuadTree(RectangleCentered(0f, 0f, Int.MAX_VALUE.toFloat(), Int.MAX_VALUE.toFloat()), 4)
+
+    var gridColor = ResourcesCompat.getColor(resources, R.color.grid_color, null)
+    var lineColor = ResourcesCompat.getColor(resources, R.color.line_color, null)
     var scaleEnabled = true
     var spanEnabled = true
     var lineEnabled = true
@@ -49,26 +74,33 @@ class SpanGridView(context: Context) : View(context) {
             field = value
             this.setGridSize()
         }
-
-    private var points = ConcurrentHashMap<Point, Node>()
-    private val defaultCellColor = Color.DKGRAY
-    private val historyQuad =
-        QuadTree(RectangleCentered(0f, 0f, Int.MAX_VALUE.toFloat(), Int.MAX_VALUE.toFloat()), 4)
-    private val lineColor = Color.LTGRAY
-
     var mode: Int = MODE_DRAW
         set(value) {
             field = value
             mListener?.onModeChange(mode)
         }
 
-    var brushSize = 0
-
-    var resolution: Float = 0f
+    var brushSize = 1
         set(value) {
-            field = value
+            val data = value.coerceIn(1, 3)
+            field = data
+        }
+
+    private var resolution: Float = 0f
+        set(value) {
+            val data = value.coerceIn(scaleLimitStart, scaleLimitEnd)
+            field = data
             this.setGridSize()
         }
+
+    var scale: Float = 0f
+        set(value) {
+            val data = value.coerceIn(0f, 1f)
+            field = data
+            setScaleToResolution(data)
+        }
+        get() = resolution / (scaleLimitEnd - scaleLimitEnd)
+
 
     var lineWidth: Float = 1f
         set(value) {
@@ -77,17 +109,15 @@ class SpanGridView(context: Context) : View(context) {
             this.setGridSize()
         }
 
-    var strokeWidth: Float = 1f
-        set(value) {
-            field = value
-            _strokeWidth = value
-            this.setGridSize()
-        }
-
     private var _lineWidth: Float = 1f
     private var _strokeWidth: Float = 5f
 
-    private var fact = 0f
+    private var xOff = 0f
+    private var yOff = 0f
+
+    var startPoint: Point = Point(0, 0)
+        get() = getPixelDetails(PointF(0f, 0f))
+        private set
 
     var gridWidth: Float = 0f
         set(value) {
@@ -98,28 +128,24 @@ class SpanGridView(context: Context) : View(context) {
     var gridHeight: Float = 0f
         private set
 
-    private var mListener: OnGridSelectListener? = null
-
-
-    private var xFlingValue:Float = 0f
+    private var xFlingValue: Float = 0f
         set(value) {
             field = value
-            xOff =  (value * fact)
+            xOff = (value * fact)
 
             setGridSize()
         }
 
-    private var yFlingValue:Float = 0f
+    private var yFlingValue: Float = 0f
         set(value) {
             field = value
-            yOff =  (value * fact)
+            yOff = (value * fact)
 
             setGridSize()
-
         }
 
 
-    val xFling = object : FloatPropertyCompat<SpanGridView>("xFling") {
+    private val xFling = object : FloatPropertyCompat<SpanGridView>("xFling") {
         override fun getValue(`object`: SpanGridView?): Float {
             return `object`?.xFlingValue ?: 0f
         }
@@ -130,7 +156,7 @@ class SpanGridView(context: Context) : View(context) {
 
     }
 
-    val yFling = object : FloatPropertyCompat<SpanGridView>("yFling") {
+    private val yFling = object : FloatPropertyCompat<SpanGridView>("yFling") {
         override fun getValue(`object`: SpanGridView?): Float {
             return `object`?.yFlingValue ?: 0f
         }
@@ -141,10 +167,37 @@ class SpanGridView(context: Context) : View(context) {
 
     }
 
-    val flingX = FlingAnimation(this@SpanGridView, xFling)
-    val flingY = FlingAnimation(this@SpanGridView, yFling)
+    private val flingX = FlingAnimation(this@SpanGridView, xFling).setFriction(FRICTION)
+    private val flingY = FlingAnimation(this@SpanGridView, yFling).setFriction(FRICTION)
 
-    private var vTracker: VelocityTracker? = null
+    private fun init(set: AttributeSet?) {
+        set?.let { attrSet ->
+
+            val ta = context.obtainStyledAttributes(attrSet, R.styleable.SpanGridView)
+
+            lineColor = ta.getColor(
+                R.styleable.SpanGridView_lineColor,
+                ResourcesCompat.getColor(resources, R.color.line_color, null)
+            )
+            gridColor = ta.getColor(
+                R.styleable.SpanGridView_gridColor,
+                ResourcesCompat.getColor(resources, R.color.grid_color, null)
+            )
+            scale = ta.getFloat(R.styleable.SpanGridView_scale, 1f)
+            lineWidth = ta.getFloat(R.styleable.SpanGridView_lineWidth, 1f)
+            scaleEnabled = ta.getBoolean(R.styleable.SpanGridView_enableScale, true)
+            spanEnabled = ta.getBoolean(R.styleable.SpanGridView_enableSpan, true)
+            lineEnabled = ta.getBoolean(R.styleable.SpanGridView_enableLine, true)
+            brushSize = ta.getInteger(R.styleable.SpanGridView_brushSize, 1)
+
+            ta.recycle()
+
+        }
+    }
+
+    private fun setScaleToResolution(scale: Float) {
+        resolution = (scaleLimitEnd - scaleLimitStart) * scale
+    }
 
     private val mGestureListener = object : GestureDetector.SimpleOnGestureListener() {
         override fun onScroll(
@@ -156,8 +209,8 @@ class SpanGridView(context: Context) : View(context) {
 
             if (mode == MODE_VIEW && spanEnabled) {
 
-                xFling.setValue(this@SpanGridView , (xOff - distanceX * fact)/fact)
-                yFling.setValue(this@SpanGridView , (yOff - distanceY * fact)/fact)
+                xFling.setValue(this@SpanGridView, (xOff - distanceX * fact) / fact)
+                yFling.setValue(this@SpanGridView, (yOff - distanceY * fact) / fact)
 
             }
             return true
@@ -172,18 +225,16 @@ class SpanGridView(context: Context) : View(context) {
 
             if (mode == MODE_VIEW) {
 
-                val distanceInX: Float = abs(e2.rawX - e1.rawX )
-                val distanceInY: Float = abs(e2.rawY - e1.rawY )
+                val distanceInX: Float = abs(e2.rawX - e1.rawX)
+                val distanceInY: Float = abs(e2.rawY - e1.rawY)
 
 
                 if (distanceInX > MIN_DISTANCE_MOVED) {
                     flingX.setStartVelocity(velocityX)
-                        .setFriction(FRICTION)
                         .start()
                 }
                 if (distanceInY > MIN_DISTANCE_MOVED) {
                     flingY.setStartVelocity(velocityY)
-                        .setFriction(FRICTION)
                         .start()
                 }
             }
@@ -200,7 +251,7 @@ class SpanGridView(context: Context) : View(context) {
             if (mode == MODE_VIEW && scaleEnabled) {
 
                 val scale = resolution * detector.scaleFactor
-                if (scale in 20f..150f) {
+                if (scale in scaleLimitStart..scaleLimitEnd) {
 
                     _lineWidth *= detector.scaleFactor
                     _strokeWidth *= detector.scaleFactor
@@ -208,8 +259,8 @@ class SpanGridView(context: Context) : View(context) {
                     val factS =
                         (scale - resolution) / ((resolution + _lineWidth) * (scale + _lineWidth))
 
-                    xFling.setValue(this@SpanGridView , (xOff - detector.focusX * factS)/fact)
-                    yFling.setValue(this@SpanGridView , (yOff - detector.focusY * factS)/fact)
+                    xFling.setValue(this@SpanGridView, (xOff - detector.focusX * factS) / fact)
+                    yFling.setValue(this@SpanGridView, (yOff - detector.focusY * factS) / fact)
 
                     resolution = scale
 
@@ -272,13 +323,6 @@ class SpanGridView(context: Context) : View(context) {
             MotionEvent.ACTION_DOWN -> {
                 flingX.cancel()
                 flingY.cancel()
-
-                if (vTracker == null) {
-                    vTracker = VelocityTracker.obtain();
-                } else {
-                    vTracker?.clear();
-                }
-                vTracker?.addMovement(event);
             }
             MotionEvent.ACTION_MOVE -> {
                 if (mode == MODE_DRAW) {
@@ -293,21 +337,21 @@ class SpanGridView(context: Context) : View(context) {
                 }
 
                 setTouchCount(0)
-                mListener?.onEventUp()
             }
         }
         return true
     }
 
     private fun drawCenterSquare(xc: Int, yc: Int, r: Int) {
-        val x1 = xc - r
-        val y1 = yc - r
-        val x2 = xc + r
-        val y2 = yc + r
+        val rr = r - 1
+        val x1 = xc - rr
+        val y1 = yc - rr
+        val x2 = xc + rr
+        val y2 = yc + rr
 
         for (x in x1..x2)
             for (y in y1..y2)
-                mListener?.onEventMove(Point(x, y))
+                mListener?.onDraw(Point(x, y))
     }
 
     override fun performClick(): Boolean {
@@ -406,7 +450,7 @@ class SpanGridView(context: Context) : View(context) {
     }
 
     private fun Canvas.drawGridLines() {
-        drawColor(defaultCellColor)
+        drawColor(gridColor)
 
         val factX = -xOff.toInt() + xOff
         val factY = -yOff.toInt() + yOff
@@ -496,9 +540,7 @@ class SpanGridView(context: Context) : View(context) {
     }
 
     interface OnGridSelectListener {
-        fun onEventMove(px: Point)
-        fun onEventUp()
-        fun onEventDown(px: Point)
+        fun onDraw(px: Point)
         fun onModeChange(mode: Int)
     }
 }

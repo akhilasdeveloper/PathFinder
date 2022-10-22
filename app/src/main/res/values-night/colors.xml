@@ -11,7 +11,7 @@
     <color name="block1">#8A1188</color>
     <color name="empty">#0c3547</color>
     <color name="block">#F9F6FF</color>
-    <color name="granite">#515151</color>
+    <color name="granite">#5E5E5E</color>
     <color name="grass">#1E5128</color>
     <color name="sand">#957928</color>
     <color name="snow">#D1D1D1</color>
@@ -26,4 +26,8 @@
     <color name="rippleColor">#000000</color>
     <color name="statusBarColor">#121212</color>
     <color name="textColor">#ffffff</color>
+    <color name="light_blue_400">#FF29B6F6</color>
+    <color name="light_blue_600">#FF039BE5</color>
+    <color name="gray_400">#FFBDBDBD</color>
+    <color name="gray_600">#FF757575</color>
 </resources>

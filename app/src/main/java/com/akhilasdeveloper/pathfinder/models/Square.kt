@@ -4,9 +4,6 @@ import android.content.Context
 import androidx.core.content.ContextCompat
 import com.akhilasdeveloper.pathfinder.R
 import com.akhilasdeveloper.pathfinder.views.Keys
-import com.akhilasdeveloper.pathfinder.views.Keys.AIR
-import com.akhilasdeveloper.pathfinder.views.Keys.PATH
-import com.akhilasdeveloper.pathfinder.views.Keys.VISITED
 import com.akhilasdeveloper.spangridview.models.Point
 
 data class Square(
@@ -17,11 +14,15 @@ data class Square(
     var previous: Point? = null,
     var color: Int,
     var fillColor: Int = color,
+
+    var f:Int = 0,
+    var g:Int = 0,
+    var h:Int = 0,
 ) {
 
     fun copyToType(type: Int): Square {
         val node = nodes(type)
-        val color = if ((type == PATH || type == VISITED) && this.type != AIR ) this.color else node.color
+        val color = if ((type == Keys.PATH || type == Keys.VISITED) && this.type != Keys.AIR ) this.color else node.color
         return node.copy(distance = this.distance, previous = this.previous, color = color)
     }
 

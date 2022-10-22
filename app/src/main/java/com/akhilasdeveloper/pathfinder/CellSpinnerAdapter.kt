@@ -31,10 +31,11 @@ class CellSpinnerAdapter(context: Context, list: ArrayList<CellItem>) :
         }
 
         getItem(position)?.let { item ->
+            val color = ContextCompat.getColor(context, item.cell.color)
             view.cellIcon.setImageResource(item.cellIcon)
                 ImageViewCompat.setImageTintList(
                     view.cellIcon,
-                    ColorStateList.valueOf(ContextCompat.getColor(context, item.cell.color))
+                    ColorStateList.valueOf(color)
                 )
             view.cellName.text = item.cell.name
         }

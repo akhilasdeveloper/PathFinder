@@ -11,7 +11,6 @@ import androidx.appcompat.widget.PopupMenu
 import androidx.core.content.ContextCompat
 import com.akhilasdeveloper.pathfinder.algorithms.HeapMinHash
 import com.akhilasdeveloper.pathfinder.algorithms.pathfinding.*
-import com.akhilasdeveloper.pathfinder.algorithms.pathfinding.findPathAStar
 import com.akhilasdeveloper.pathfinder.algorithms.pathfinding.findPathDijkstr
 import com.akhilasdeveloper.pathfinder.algorithms.pathfinding.generateRecursiveMaze
 import com.akhilasdeveloper.pathfinder.algorithms.pathfinding.getData
@@ -26,8 +25,6 @@ import com.akhilasdeveloper.spangridview.SpanGridView
 import com.akhilasdeveloper.spangridview.models.Point
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import kotlinx.coroutines.*
-import kotlin.math.floor
-import kotlin.random.Random
 
 
 class MainActivity : AppCompatActivity() {
@@ -120,6 +117,26 @@ class MainActivity : AppCompatActivity() {
                     R.id.a_star -> {
                         if (startPont != null && endPont != null)
                             findAStar()
+                        else
+                            Toast.makeText(
+                                this,
+                                "Please select start point and end point",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                    }
+                    R.id.bfs -> {
+                        if (startPont != null && endPont != null)
+                            findPathBFS()
+                        else
+                            Toast.makeText(
+                                this,
+                                "Please select start point and end point",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                    }
+                    R.id.dfs -> {
+                        if (startPont != null && endPont != null)
+                            findPathDFS()
                         else
                             Toast.makeText(
                                 this,
@@ -301,7 +318,7 @@ class MainActivity : AppCompatActivity() {
         return Point(0,0)
     }
 
-    internal fun getMaxXY(): Point {
+    private fun getMaxXY(): Point {
         xHash.keys.toIntArray().maxOrNull()?.let { x ->
             yHash.keys.toIntArray().maxOrNull()?.let { y ->
                 return Point(x, y)

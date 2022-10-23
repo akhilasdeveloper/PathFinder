@@ -9,4 +9,12 @@
         android:id="@+id/a_star"
         android:title="A*" />
 
+    <item
+        android:id="@+id/bfs"
+        android:title="Breadth First Search" />
+
+    <item
+        android:id="@+id/dfs"
+        android:title="Depth First Search" />
+
 </menu>

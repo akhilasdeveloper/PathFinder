@@ -7,7 +7,7 @@ import com.akhilasdeveloper.spangridview.models.Point
 import kotlinx.coroutines.*
 
 
-internal fun MainActivity.findPathDijkstr() {
+internal fun MainActivity.findPathBFS() {
 
     CoroutineScope(Dispatchers.Default).launch {
 
@@ -69,7 +69,7 @@ internal fun MainActivity.findPathDijkstr() {
              * if the distance is greater, then assign short distance + 1 to neighbours
              */
             neighbours.forEach {
-                val dis = gridHash[shortNode]!!.distance + gridHash[it]!!.weight
+                val dis = gridHash[shortNode]!!.distance + 1
                 if (dis < gridHash[it]!!.distance) {
                     gridHash[it]!!.distance = dis
                     heapMin.push(it, gridHash)
@@ -83,42 +83,3 @@ internal fun MainActivity.findPathDijkstr() {
     }
 }
 
-/**
- * Function to find neighbours (top, left, bottom, right) of the short distance node
- */
-
-internal fun MainActivity.getNeighbours(
-    shortPoint: Point
-): Array<Point> {
-
-    val xx = shortPoint.x
-    val yy = shortPoint.y
-
-    val n = mutableListOf<Point>()
-    val points =
-        arrayOf(
-            Point(xx - 1, yy),
-            Point(xx, yy - 1),
-            Point(xx, yy + 1),
-            Point(xx + 1, yy)
-        )
-
-    points.forEach { p ->
-        val data = getData(p)
-        if (data.type == Keys.END ||
-            data.type == Keys.AIR ||
-            data.type == Keys.GRANITE ||
-            data.type == Keys.GRASS ||
-            data.type == Keys.SAND ||
-            data.type == Keys.SNOW ||
-            data.type == Keys.STONE ||
-            data.type == Keys.WATER ||
-            data.type == Keys.WATER_DEEP
-        ) {
-            n.add(p)
-        }
-    }
-    return n.toTypedArray()
-}
-
-internal fun MainActivity.getData(index: Point) = gridHash.getOrPut(index) { nodes() }

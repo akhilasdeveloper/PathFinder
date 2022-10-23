@@ -7,7 +7,7 @@ import com.akhilasdeveloper.spangridview.models.Point
 import kotlinx.coroutines.*
 
 
-internal fun MainActivity.findPathDijkstr() {
+internal fun MainActivity.findPathDFS() {
 
     CoroutineScope(Dispatchers.Default).launch {
 
@@ -62,14 +62,14 @@ internal fun MainActivity.findPathDijkstr() {
             /**
              * Fetch all neighbours(top, left, bottom, right) of short node
              */
-            val neighbours: Array<Point> = getNeighbours(shortNode)
+            val neighbours: Array<Point> = getDFSNeighbours(shortNode)
 
             /**
              * checking all the neighbours and comparing the distance with short distance + 1
              * if the distance is greater, then assign short distance + 1 to neighbours
              */
             neighbours.forEach {
-                val dis = gridHash[shortNode]!!.distance + gridHash[it]!!.weight
+                val dis = gridHash[shortNode]!!.distance + 1
                 if (dis < gridHash[it]!!.distance) {
                     gridHash[it]!!.distance = dis
                     heapMin.push(it, gridHash)
@@ -81,13 +81,10 @@ internal fun MainActivity.findPathDijkstr() {
 
 
     }
+
+
 }
-
-/**
- * Function to find neighbours (top, left, bottom, right) of the short distance node
- */
-
-internal fun MainActivity.getNeighbours(
+private fun MainActivity.getDFSNeighbours(
     shortPoint: Point
 ): Array<Point> {
 
@@ -120,5 +117,3 @@ internal fun MainActivity.getNeighbours(
     }
     return n.toTypedArray()
 }
-
-internal fun MainActivity.getData(index: Point) = gridHash.getOrPut(index) { nodes() }

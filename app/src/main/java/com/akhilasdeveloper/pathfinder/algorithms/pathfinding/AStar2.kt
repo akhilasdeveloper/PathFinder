@@ -73,9 +73,7 @@ internal fun MainActivity.findAStar() {
             neighbours.forEach {
 
                 val tempG = gridHash[shortNode]!!.g + gridHash[it]!!.weight
-                if (tempG < gridHash[it]!!.g) {
-                    gridHash[it]!!.g = tempG
-                }
+                gridHash[it]!!.g = tempG
 
                 gridHash[it]!!.h = heuristic(it, endP)
                 gridHash[it]!!.distance = gridHash[it]!!.g + gridHash[it]!!.h
@@ -95,37 +93,3 @@ private fun heuristic(nei: Point, endP: Point): Int = abs(nei.x - endP.x) + abs(
 /**
  * Function to find neighbours (top, left, bottom, right) of the short distance node
  */
-
-private fun MainActivity.getNeighbours(
-    shortPoint: Point
-): Array<Point> {
-
-    val xx = shortPoint.x
-    val yy = shortPoint.y
-
-    val n = mutableListOf<Point>()
-    val points =
-        arrayOf(
-            Point(xx - 1, yy),
-            Point(xx, yy - 1),
-            Point(xx, yy + 1),
-            Point(xx + 1, yy)
-        )
-
-    points.forEach { p ->
-        val data = getData(p)
-        if (data.type == Keys.END ||
-            data.type == Keys.AIR ||
-            data.type == Keys.GRANITE ||
-            data.type == Keys.GRASS ||
-            data.type == Keys.SAND ||
-            data.type == Keys.SNOW ||
-            data.type == Keys.STONE ||
-            data.type == Keys.WATER ||
-            data.type == Keys.WATER_DEEP
-        ) {
-            n.add(p)
-        }
-    }
-    return n.toTypedArray()
-}

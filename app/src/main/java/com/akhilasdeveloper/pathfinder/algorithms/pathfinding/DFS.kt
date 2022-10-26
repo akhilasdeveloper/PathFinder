@@ -113,6 +113,7 @@ private fun MainActivity.getDFSNeighbours(
             data.type == Keys.WATER_DEEP
         ) {
             n.add(p)
+            return n.toTypedArray()
         }
     }
     return n.toTypedArray()

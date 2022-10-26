@@ -9,7 +9,10 @@ import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.PopupMenu
 import androidx.core.content.ContextCompat
+import androidx.recyclerview.widget.GridLayoutManager
 import com.akhilasdeveloper.pathfinder.algorithms.HeapMinHash
+import com.akhilasdeveloper.pathfinder.algorithms.NodeListClickListener
+import com.akhilasdeveloper.pathfinder.algorithms.ShareRecyclerAdapter
 import com.akhilasdeveloper.pathfinder.algorithms.pathfinding.*
 import com.akhilasdeveloper.pathfinder.algorithms.pathfinding.findPathDijkstr
 import com.akhilasdeveloper.pathfinder.algorithms.pathfinding.generateRecursiveMaze
@@ -24,10 +27,11 @@ import com.akhilasdeveloper.pathfinder.views.Keys.START
 import com.akhilasdeveloper.spangridview.SpanGridView
 import com.akhilasdeveloper.spangridview.models.Point
 import com.google.android.material.bottomsheet.BottomSheetBehavior
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import kotlinx.coroutines.*
 
 
-class MainActivity : AppCompatActivity() {
+class MainActivity : AppCompatActivity(), NodeListClickListener {
 
     private var _binding: ActivityMainBinding? = null
     private val binding get() = _binding!!
@@ -42,6 +46,8 @@ class MainActivity : AppCompatActivity() {
     internal var heapMin: HeapMinHash<Point> = HeapMinHash()
     internal var sleepVal = 0L
     internal var sleepValPath = 5L
+
+    private lateinit var shareListAdapter:ShareRecyclerAdapter
 
     private var selectedItem = 0
         set(value) {
@@ -81,9 +87,6 @@ class MainActivity : AppCompatActivity() {
             }
         })
 
-        binding.speedSlide.addOnChangeListener { _, value, _ ->
-            sleepVal = value.toLong()
-        }
 
         binding.cellSelector.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
             override fun onItemSelected(p0: AdapterView<*>?, p1: View?, p2: Int, p3: Long) {
@@ -97,72 +100,83 @@ class MainActivity : AppCompatActivity() {
 
         }
 
-        binding.findPath.setOnClickListener {
-            val popupMenu = PopupMenu(this@MainActivity, it)
-
-            popupMenu.menuInflater.inflate(R.menu.menu_path_algorithms, popupMenu.menu)
-            popupMenu.setOnMenuItemClickListener { menuItem ->
-
-                when (menuItem.itemId) {
-                    R.id.digkstra -> {
-                        if (startPont != null && endPont != null)
-                            findPathDijkstr()
-                        else
-                            Toast.makeText(
-                                this,
-                                "Please select start point and end point",
-                                Toast.LENGTH_SHORT
-                            ).show()
-                    }
-                    R.id.a_star -> {
-                        if (startPont != null && endPont != null)
-                            findAStar()
-                        else
-                            Toast.makeText(
-                                this,
-                                "Please select start point and end point",
-                                Toast.LENGTH_SHORT
-                            ).show()
-                    }
-                    R.id.bfs -> {
-                        if (startPont != null && endPont != null)
-                            findPathBFS()
-                        else
-                            Toast.makeText(
-                                this,
-                                "Please select start point and end point",
-                                Toast.LENGTH_SHORT
-                            ).show()
-                    }
-                    R.id.dfs -> {
-                        if (startPont != null && endPont != null)
-                            findPathDFS()
-                        else
-                            Toast.makeText(
-                                this,
-                                "Please select start point and end point",
-                                Toast.LENGTH_SHORT
-                            ).show()
-                    }
+        binding.bottomAppBar.setOnMenuItemClickListener { menuItem ->
+            when (menuItem.itemId) {
+                R.id.draw -> {
+                    bottomSheetBehavior.state = BottomSheetBehavior.STATE_EXPANDED
+                    true
                 }
-                true
-            }
-            popupMenu.show()
-        }
+                R.id.grid -> {
+                    val items = arrayOf("Recursive")
 
-        binding.generateGrid.setOnClickListener {
-            val popupMenu = PopupMenu(this@MainActivity, it)
-
-            popupMenu.menuInflater.inflate(R.menu.menu_maze_algorithms, popupMenu.menu)
-            popupMenu.setOnMenuItemClickListener { menuItem ->
-                when (menuItem.itemId) {
-                    R.id.recursive -> {
-                        generateRecursiveMaze()
-                    }
+                    MaterialAlertDialogBuilder(this)
+                        .setTitle("Select Maze Algorithm")
+                        .setItems(items) { _, which ->
+                            when(which){
+                                0->{
+                                    generateRecursiveMaze()
+                                }
+                            }
+                        }
+                        .show()
+                    true
                 }
-                true
+                R.id.play -> {
+
+                    val items = arrayOf("Dijkstra", "A*", "BFS", "DFS")
+
+                    MaterialAlertDialogBuilder(this)
+                        .setTitle("Select Path Algorithm")
+                        .setItems(items) { _, which ->
+                            when(which){
+                                0->{
+                                    if (startPont != null && endPont != null)
+                                        findPathDijkstr()
+                                    else
+                                        Toast.makeText(
+                                            this,
+                                            "Please select start point and end point",
+                                            Toast.LENGTH_SHORT
+                                        ).show()
+                                }
+                                1->{
+                                    if (startPont != null && endPont != null)
+                                        findAStar()
+                                    else
+                                        Toast.makeText(
+                                            this,
+                                            "Please select start point and end point",
+                                            Toast.LENGTH_SHORT
+                                        ).show()
+                                }
+                                2->{
+                                    if (startPont != null && endPont != null)
+                                        findPathBFS()
+                                    else
+                                        Toast.makeText(
+                                            this,
+                                            "Please select start point and end point",
+                                            Toast.LENGTH_SHORT
+                                        ).show()
+                                }
+                                3->{
+                                    if (startPont != null && endPont != null)
+                                        findPathDFS()
+                                    else
+                                        Toast.makeText(
+                                            this,
+                                            "Please select start point and end point",
+                                            Toast.LENGTH_SHORT
+                                        ).show()
+                                }
+                            }
+                        }
+                        .show()
+
+                    true
+                }
+                else -> false
             }
-            popupMenu.show()
         }
 
     }
@@ -217,6 +231,10 @@ class MainActivity : AppCompatActivity() {
         cellSpinnerAdapter = CellSpinnerAdapter(this, cellList)
         binding.cellSelector.adapter = cellSpinnerAdapter
 
+        shareListAdapter = ShareRecyclerAdapter(this)
+        binding.nodeList.layoutManager = GridLayoutManager(this,2)
+        binding.nodeList.adapter = shareListAdapter
+        shareListAdapter.submitList(cellList)
     }
 
     private fun initialiseLists() {
@@ -346,6 +364,10 @@ class MainActivity : AppCompatActivity() {
         val height = maxPoint.y - minPoint.y
 
         generateBorder(minPoint, width, height)
+    }
+
+    override fun onItemClicked(cellItem: CellItem) {
+
     }
 
 }

@@ -10,7 +10,8 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:orientation="vertical">
+        android:orientation="vertical"
+        android:layout_marginBottom="56dp">
 
         <com.akhilasdeveloper.spangridview.SpanGridView
             android:layout_width="match_parent"
@@ -27,6 +28,7 @@
             android:layout_height="wrap_content"
             android:orientation="horizontal"
             android:padding="10dp"
+            android:visibility="gone"
             android:gravity="center_vertical"
             >
 
@@ -56,6 +58,16 @@
         </LinearLayout>
     </LinearLayout>
 
+    <com.google.android.material.bottomappbar.BottomAppBar
+        android:id="@+id/bottomAppBar"
+        android:layout_width="match_parent"
+        android:layout_height="56dp"
+        android:layout_gravity="bottom"
+        style="@style/Widget.MaterialComponents.BottomAppBar.Colored"
+        app:navigationIcon="@drawable/ic_round_settings_24"
+        app:menu="@menu/menu_main"
+        />
+
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="500dp"
@@ -67,86 +79,11 @@
         android:padding="10dp"
         android:background="@color/statusBarColor">
 
-        <TextView
+        <androidx.recyclerview.widget.RecyclerView
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Node size"
-            android:textColor="@color/white"/>
-
-        <com.google.android.material.slider.Slider
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:valueFrom="10"
-            android:valueTo="100"
-            android:stepSize="1"
-            android:id="@+id/node_slide"/>
-
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Line size"
-            android:textColor="@color/white"/>
-
-        <com.google.android.material.slider.Slider
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:valueFrom="1"
-            android:valueTo="10"
-            android:stepSize="1"
-            android:id="@+id/line_slide"/>
-
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Speed"
-            android:textColor="@color/white"/>
-
-        <com.google.android.material.slider.Slider
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:valueFrom="0"
-            android:valueTo="20"
-            android:stepSize="1"
-            android:id="@+id/speed_slide"/>
-
-        <com.google.android.material.switchmaterial.SwitchMaterial
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:id="@+id/enable_edit"
-            android:textColor="@color/white"
-            android:text="Eraser mode"/>
-
-        <RadioGroup
-            android:id="@+id/radioGroup"
-            android:checkedButton="@+id/radio_button_1"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content">
-            <RadioButton
-                android:id="@+id/blockers"
-                android:textColor="@color/white"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:checked="true"
-                android:text="blockers"/>
-            <RadioButton
-                android:id="@+id/start"
-                android:textColor="@color/white"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:text="start"/>
-            <RadioButton
-                android:id="@+id/end"
-                android:textColor="@color/white"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:text="end"/>
-        </RadioGroup>
+            android:layout_height="match_parent"
+            android:id="@+id/node_list" />
 
     </LinearLayout>
-    <!--<androidx.recyclerview.widget.RecyclerView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:id="@+id/grid"
-        android:nestedScrollingEnabled="true"/>-->
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

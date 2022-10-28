@@ -7,56 +7,21 @@
     android:orientation="vertical"
     tools:context=".MainActivity">
 
-    <LinearLayout
+    <com.akhilasdeveloper.spangridview.SpanGridView
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:orientation="vertical"
-        android:layout_marginBottom="56dp">
+        android:id="@+id/gridViewHolder"
+        android:layout_marginBottom="56dp"
+        app:lineColor="@color/line_color"
+        app:scale=".3"
+        app:lineWidth="1"
+        android:layout_weight="1"
+        app:gridColor="@color/empty" />
 
-        <com.akhilasdeveloper.spangridview.SpanGridView
-            android:layout_width="match_parent"
-            android:layout_height="0dp"
-            android:id="@+id/gridViewHolder"
-            app:lineColor="@color/line_color"
-            app:scale=".3"
-            app:lineWidth="1"
-            android:layout_weight="1"
-            app:gridColor="@color/empty" />
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:padding="10dp"
-            android:visibility="gone"
-            android:gravity="center_vertical"
-            >
-
-            <Spinner
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:id="@+id/cellSelector"/>
-
-            <View
-                android:layout_width="0dp"
-                android:layout_height="0dp"
-                android:layout_weight="1"/>
-
-            <ImageView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:src="@drawable/ic_baseline_grid_view_24"
-                android:id="@+id/generateGrid"/>
-
-            <ImageView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:src="@drawable/ic_round_play_arrow_24"
-                android:id="@+id/findPath"
-                android:layout_marginStart="20dp"/>
-
-        </LinearLayout>
-    </LinearLayout>
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:text="Message"/>
 
     <com.google.android.material.bottomappbar.BottomAppBar
         android:id="@+id/bottomAppBar"
@@ -70,19 +35,70 @@
 
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="500dp"
+        android:layout_height="wrap_content"
         android:orientation="vertical"
         app:layout_behavior="com.google.android.material.bottomsheet.BottomSheetBehavior"
         app:behavior_peekHeight="0dp"
         app:behavior_hideable="true"
         android:id="@+id/bottom_sheet"
         android:padding="10dp"
-        android:background="@color/statusBarColor">
+        android:background="@color/statusBarColor"
+        android:clickable="true">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Brush size"
+            android:textColor="@color/white"/>
+
+        <com.google.android.material.slider.Slider
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:valueFrom="1"
+            android:valueTo="3"
+            android:stepSize="1"
+            android:id="@+id/node_slide"/>
 
         <androidx.recyclerview.widget.RecyclerView
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:id="@+id/node_list" />
+
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        app:layout_behavior="com.google.android.material.bottomsheet.BottomSheetBehavior"
+        app:behavior_peekHeight="0dp"
+        app:behavior_hideable="true"
+        android:id="@+id/bottom_sheet_settings"
+        android:padding="10dp"
+        android:background="@color/statusBarColor"
+        android:clickable="true">
+
+        <CheckBox
+            android:id="@+id/gridEnabled"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:buttonTint="@color/textColor"
+            android:checked="true"
+            android:text="Enable grid"/>
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Animation Delay (ms)"
+            android:textColor="@color/white"/>
+
+        <com.google.android.material.slider.Slider
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:valueFrom="0"
+            android:valueTo="50"
+            android:stepSize="1"
+            android:id="@+id/speed_slide"/>
 
     </LinearLayout>
 

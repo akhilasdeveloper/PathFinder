@@ -2,6 +2,7 @@ package com.akhilasdeveloper.pathfinder.algorithms
 
 import android.content.res.ColorStateList
 import android.view.LayoutInflater
+import android.view.View
 import android.view.ViewGroup
 import androidx.core.content.ContextCompat
 import androidx.core.widget.ImageViewCompat
@@ -24,7 +25,7 @@ class ShareRecyclerAdapter(
 
         val photoItemViewHolder = holder as PhotoViewHolder
         currentItem?.let {
-            photoItemViewHolder.bindPhoto(currentItem, position)
+            photoItemViewHolder.bindPhoto(currentItem)
         }
     }
 
@@ -35,7 +36,7 @@ class ShareRecyclerAdapter(
     ) :
         RecyclerView.ViewHolder(binding.root) {
 
-        fun bindPhoto(photo: CellItem, position: Int) {
+        fun bindPhoto(photo: CellItem) {
             binding.apply {
                 val color = ContextCompat.getColor(this.root.context, photo.cell.color)
                 cellIcon.setImageResource(photo.cellIcon)
@@ -43,7 +44,12 @@ class ShareRecyclerAdapter(
                     cellIcon,
                     ColorStateList.valueOf(color)
                 )
-                cellName.text = photo.cell.name
+                val string = photo.cell.name + " \n(" + (if (photo.cell.weight == Int.MAX_VALUE) "Infinity" else photo.cell.weight) + ")"
+                cellName.text = string
+                if (photo.selected)
+                    selected.visibility = View.VISIBLE
+                else
+                    selected.visibility = View.GONE
 
             }
 

@@ -2,12 +2,9 @@ package com.akhilasdeveloper.pathfinder
 
 import android.os.Bundle
 import android.view.Menu
-import android.view.View
-import android.widget.AdapterView
 import android.widget.LinearLayout
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import androidx.appcompat.widget.PopupMenu
 import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.GridLayoutManager
 import com.akhilasdeveloper.pathfinder.algorithms.HeapMinHash
@@ -36,6 +33,7 @@ class MainActivity : AppCompatActivity(), NodeListClickListener {
     private var _binding: ActivityMainBinding? = null
     private val binding get() = _binding!!
     private lateinit var bottomSheetBehavior: BottomSheetBehavior<LinearLayout>
+    private lateinit var bottomSheetSettingsBehavior: BottomSheetBehavior<LinearLayout>
     internal lateinit var gridCanvasView: SpanGridView
     internal var startPont: Point? = null
     internal var endPont: Point? = null
@@ -45,17 +43,19 @@ class MainActivity : AppCompatActivity(), NodeListClickListener {
     private var yHash: HashMap<Int, Int> = hashMapOf()
     internal var heapMin: HeapMinHash<Point> = HeapMinHash()
     internal var sleepVal = 0L
-    internal var sleepValPath = 5L
+    internal var sleepValPath = 0L
 
-    private lateinit var shareListAdapter:ShareRecyclerAdapter
+    private lateinit var shareListAdapter: ShareRecyclerAdapter
 
-    private var selectedItem = 0
+    private var selectedItem = START
         set(value) {
+            clearSelection(field)
             field = value
+            setSelection()
             setBrushSize()
         }
 
-    private var brushSize = 2
+    private var brushSize = 1
         set(value) {
             field = value
             setBrushSize()
@@ -64,7 +64,6 @@ class MainActivity : AppCompatActivity(), NodeListClickListener {
     private val cellList: ArrayList<CellItem> = arrayListOf()
     private val pathAlgorithmList: ArrayList<String> = arrayListOf()
     private val gridAlgorithmList: ArrayList<String> = arrayListOf()
-    private var cellSpinnerAdapter: CellSpinnerAdapter? = null
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -87,17 +86,12 @@ class MainActivity : AppCompatActivity(), NodeListClickListener {
             }
         })
 
+        binding.gridEnabled.setOnClickListener {
+            gridCanvasView.lineEnabled = binding.gridEnabled.isChecked
+        }
 
-        binding.cellSelector.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
-            override fun onItemSelected(p0: AdapterView<*>?, p1: View?, p2: Int, p3: Long) {
-                selectedItem = p2
-
-            }
-
-            override fun onNothingSelected(p0: AdapterView<*>?) {
-
-            }
-
+        binding.bottomAppBar.setNavigationOnClickListener {
+            bottomSheetSettingsBehavior.state = BottomSheetBehavior.STATE_EXPANDED
         }
 
         binding.bottomAppBar.setOnMenuItemClickListener { menuItem ->
@@ -112,8 +106,8 @@ class MainActivity : AppCompatActivity(), NodeListClickListener {
                     MaterialAlertDialogBuilder(this)
                         .setTitle("Select Maze Algorithm")
                         .setItems(items) { _, which ->
-                            when(which){
-                                0->{
+                            when (which) {
+                                0 -> {
                                     generateRecursiveMaze()
                                 }
                             }
@@ -128,8 +122,8 @@ class MainActivity : AppCompatActivity(), NodeListClickListener {
                     MaterialAlertDialogBuilder(this)
                         .setTitle("Select Path Algorithm")
                         .setItems(items) { _, which ->
-                            when(which){
-                                0->{
+                            when (which) {
+                                0 -> {
                                     if (startPont != null && endPont != null)
                                         findPathDijkstr()
                                     else
@@ -139,7 +133,7 @@ class MainActivity : AppCompatActivity(), NodeListClickListener {
                                             Toast.LENGTH_SHORT
                                         ).show()
                                 }
-                                1->{
+                                1 -> {
                                     if (startPont != null && endPont != null)
                                         findAStar()
                                     else
@@ -149,7 +143,7 @@ class MainActivity : AppCompatActivity(), NodeListClickListener {
                                             Toast.LENGTH_SHORT
                                         ).show()
                                 }
-                                2->{
+                                2 -> {
                                     if (startPont != null && endPont != null)
                                         findPathBFS()
                                     else
@@ -159,7 +153,7 @@ class MainActivity : AppCompatActivity(), NodeListClickListener {
                                             Toast.LENGTH_SHORT
                                         ).show()
                                 }
-                                3->{
+                                3 -> {
                                     if (startPont != null && endPont != null)
                                         findPathDFS()
                                     else
@@ -179,17 +173,27 @@ class MainActivity : AppCompatActivity(), NodeListClickListener {
             }
         }
 
+        binding.nodeSlide.addOnChangeListener { _, value, _ ->
+            brushSize = value.toInt()
+        }
+
+        binding.speedSlide.addOnChangeListener { _, value, _ ->
+            sleepVal = value.toLong()
+            sleepValPath = value.toLong()
+        }
+
     }
 
     private fun plotPointOnTouch(px: Point) {
-        when (val type = getType()) {
+
+        when (selectedItem) {
 
             Keys.START -> {
                 startPont?.let { start ->
                     clearBit(start)
                 }
                 startPont = px
-                setBit(px, type)
+                setBit(px, selectedItem)
 
             }
             Keys.END -> {
@@ -199,7 +203,7 @@ class MainActivity : AppCompatActivity(), NodeListClickListener {
                 }
 
                 endPont = px
-                setBit(px, type)
+                setBit(px, selectedItem)
 
             }
             Keys.AIR -> {
@@ -210,45 +214,69 @@ class MainActivity : AppCompatActivity(), NodeListClickListener {
                     endPont = null
             }
             else -> {
-                setBit(px, type)
+                setBit(px, selectedItem)
             }
+
         }
     }
 
-    private fun getType() =
-        cellList[selectedItem].cell.type
-
     private fun init() {
         bottomSheetBehavior = BottomSheetBehavior.from(binding.bottomSheet)
+        bottomSheetSettingsBehavior = BottomSheetBehavior.from(binding.bottomSheetSettings)
         gridCanvasView = binding.gridViewHolder
         gridCanvasView.brushSize = brushSize
         gridCanvasView.post {
             gridCanvasView.init()
         }
 
+        binding.gridEnabled.isChecked = gridCanvasView.lineEnabled
+
         initialiseLists()
 
-        cellSpinnerAdapter = CellSpinnerAdapter(this, cellList)
-        binding.cellSelector.adapter = cellSpinnerAdapter
-
         shareListAdapter = ShareRecyclerAdapter(this)
-        binding.nodeList.layoutManager = GridLayoutManager(this,2)
+        binding.nodeList.layoutManager = GridLayoutManager(this, 3)
         binding.nodeList.adapter = shareListAdapter
         shareListAdapter.submitList(cellList)
+        setSelection()
+
+        binding.speedSlide.value = sleepVal.toFloat()
     }
+
 
     private fun initialiseLists() {
 
+        val cells = arrayListOf<CellItem>()
         for (node in nodes) {
-            cellList.add(
-                CellItem(
-                    cell = nodes(node)
-                )
-            )
+            cells.add(CellItem(
+                cell = nodes(node)
+            ))
         }
+
+        cellList.addAll(cells.sortedBy { it.cell.weight }.toList())
 
         pathAlgorithmList.add("Digkstra")
         gridAlgorithmList.add("Recursive Maze")
+    }
+
+    private fun findArrayPosition(type: Int):Int?{
+        cellList.forEachIndexed { index, cellItem ->
+            if (cellItem.cell.type == type)
+                return index
+        }
+        return null
+    }
+    private fun clearSelection(type: Int){
+        findArrayPosition(type)?.let {
+            cellList[it].selected = false
+            shareListAdapter.notifyItemChanged(it)
+        }
+    }
+
+    private fun setSelection() {
+        findArrayPosition(selectedItem)?.let {
+            cellList[it].selected = true
+            shareListAdapter.notifyItemChanged(it)
+        }
     }
 
     override fun onCreateOptionsMenu(menu: Menu?): Boolean {
@@ -257,7 +285,7 @@ class MainActivity : AppCompatActivity(), NodeListClickListener {
     }
 
     private fun setBrushSize() {
-        if (getType() == START || getType() == END)
+        if (selectedItem == START || selectedItem == END)
             gridCanvasView.brushSize = 1
         else
             gridCanvasView.brushSize = brushSize
@@ -326,14 +354,14 @@ class MainActivity : AppCompatActivity(), NodeListClickListener {
         }
     }
 
-    internal fun getMinXY(): Point {
+    private fun getMinXY(): Point {
         xHash.keys.toIntArray().minOrNull()?.let { x ->
             yHash.keys.toIntArray().minOrNull()?.let { y ->
                 return Point(x, y)
             }
         }
 
-        return Point(0,0)
+        return Point(0, 0)
     }
 
     private fun getMaxXY(): Point {
@@ -343,7 +371,7 @@ class MainActivity : AppCompatActivity(), NodeListClickListener {
             }
         }
 
-        return Point(0,0)
+        return Point(0, 0)
     }
 
     internal fun createBorder() {
@@ -367,7 +395,8 @@ class MainActivity : AppCompatActivity(), NodeListClickListener {
     }
 
     override fun onItemClicked(cellItem: CellItem) {
-
+        selectedItem = cellItem.cell.type
+        bottomSheetBehavior.state = BottomSheetBehavior.STATE_HIDDEN
     }
 
 }

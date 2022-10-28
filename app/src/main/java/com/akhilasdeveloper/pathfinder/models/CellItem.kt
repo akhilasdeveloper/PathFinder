@@ -6,5 +6,6 @@ import com.akhilasdeveloper.pathfinder.R
 
 data class CellItem(
     val cell: Square,
+    var selected: Boolean = false,
     val cellIcon: Int = R.drawable.ic_round_stop_24
 )

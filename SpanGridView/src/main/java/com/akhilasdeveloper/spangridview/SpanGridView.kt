@@ -46,8 +46,8 @@ class SpanGridView(
         init(null)
     }
 
-    private val MODE_VIEW: Int = -2
-    private val MODE_DRAW: Int = -3
+    val MODE_VIEW: Int = -2
+    val MODE_DRAW: Int = -3
 
     private val MIN_DISTANCE_MOVED = 50
     private val FRICTION = 1.1f
@@ -74,6 +74,11 @@ class SpanGridView(
     var gridColor = ResourcesCompat.getColor(resources, R.color.grid_color, null)
     var lineColor = ResourcesCompat.getColor(resources, R.color.line_color, null)
     var scaleEnabled = true
+    var drawEnabled = true
+        set(value) {
+            field = value
+            determineViewMode()
+        }
     var spanEnabled = true
     var lineEnabled = true
         set(value) {
@@ -307,7 +312,7 @@ class SpanGridView(
     }
 
     private fun determineViewMode() {
-        mode = if (touchCount > 1)
+        mode = if (touchCount > 1 || !drawEnabled)
             MODE_VIEW
         else
             MODE_DRAW

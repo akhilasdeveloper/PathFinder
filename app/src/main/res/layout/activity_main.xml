@@ -18,25 +18,54 @@
         android:layout_weight="1"
         app:gridColor="@color/empty" />
 
-    <TextView
+    <androidx.core.widget.NestedScrollView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Message"
-        android:id="@+id/message"
-        android:background="@color/messageColor"
-        android:textColor="@color/cardColor"
-        android:padding="10dp"
-        android:layout_gravity="bottom"
-        app:layout_dodgeInsetEdges="bottom"/>
+        android:orientation="vertical"
+        app:layout_behavior="com.google.android.material.bottomsheet.BottomSheetBehavior"
+        app:behavior_peekHeight="0dp"
+        app:behavior_hideable="true"
+        android:id="@+id/bottom_sheet_message"
+        app:layout_insetEdge="bottom"
+        android:clickable="true">
 
-    <com.google.android.material.bottomappbar.BottomAppBar
-        android:id="@+id/bottomAppBar"
-        android:layout_width="match_parent"
-        android:layout_height="56dp"
-        android:layout_gravity="bottom"
-        app:navigationIcon="@drawable/ic_round_settings_24"
-        app:menu="@menu/menu_main"
-        app:layout_insetEdge="bottom"/>
+        <ScrollView
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+            <androidx.coordinatorlayout.widget.CoordinatorLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Summary"
+                    android:id="@+id/message"
+                    android:scrollbars = "vertical"
+                    android:background="@color/messageColor"
+                    android:textColor="@color/cardColor"
+                    android:layout_gravity="bottom"
+                    android:paddingTop="10dp"
+                    android:paddingBottom="66dp"
+                    android:paddingStart="10dp"
+                    android:paddingEnd="10dp"
+                    android:textSize="14sp"/>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="x"
+                    android:textSize="16sp"
+                    android:padding="10dp"
+                    android:textStyle="bold"
+                    android:textColor="@color/cardColor"
+                    android:layout_gravity="top|end"/>
+            </androidx.coordinatorlayout.widget.CoordinatorLayout>
+        </ScrollView>
+
+
+    </androidx.core.widget.NestedScrollView>
+
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -46,7 +75,10 @@
         app:behavior_peekHeight="0dp"
         app:behavior_hideable="true"
         android:id="@+id/bottom_sheet"
-        android:padding="10dp"
+        android:paddingTop="10dp"
+        android:paddingBottom="66dp"
+        android:paddingStart="10dp"
+        android:paddingEnd="10dp"
         android:background="@color/statusBarColor"
         android:clickable="true"
         app:layout_insetEdge="bottom">
@@ -55,7 +87,8 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="Brush size"
-            android:textColor="@color/white"/>
+            android:textColor="@color/white"
+            android:padding="10dp"/>
 
         <com.google.android.material.slider.Slider
             android:layout_width="match_parent"
@@ -63,7 +96,8 @@
             android:valueFrom="1"
             android:valueTo="3"
             android:stepSize="1"
-            android:id="@+id/node_slide"/>
+            android:id="@+id/node_slide"
+            android:padding="10dp"/>
 
         <androidx.recyclerview.widget.RecyclerView
             android:layout_width="match_parent"
@@ -80,9 +114,13 @@
         app:behavior_peekHeight="0dp"
         app:behavior_hideable="true"
         android:id="@+id/bottom_sheet_settings"
-        android:padding="10dp"
+        android:paddingTop="10dp"
+        android:paddingBottom="66dp"
+        android:paddingStart="10dp"
+        android:paddingEnd="10dp"
         android:background="@color/statusBarColor"
-        android:clickable="true">
+        android:clickable="true"
+        app:layout_insetEdge="bottom">
 
         <CheckBox
             android:id="@+id/gridEnabled"
@@ -90,13 +128,15 @@
             android:layout_height="wrap_content"
             app:buttonTint="@color/textColor"
             android:checked="true"
-            android:text="Enable grid"/>
+            android:text="Enable grid"
+            android:padding="10dp"/>
 
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="Animation Delay (ms)"
-            android:textColor="@color/white"/>
+            android:textColor="@color/white"
+            android:padding="10dp"/>
 
         <com.google.android.material.slider.Slider
             android:layout_width="match_parent"
@@ -104,8 +144,18 @@
             android:valueFrom="0"
             android:valueTo="50"
             android:stepSize="1"
-            android:id="@+id/speed_slide"/>
+            android:id="@+id/speed_slide"
+            android:padding="10dp"/>
 
     </LinearLayout>
+
+    <com.google.android.material.bottomappbar.BottomAppBar
+        android:id="@+id/bottomAppBar"
+        android:layout_width="match_parent"
+        android:layout_height="56dp"
+        android:layout_gravity="bottom"
+        app:navigationIcon="@drawable/ic_round_settings_24"
+        app:menu="@menu/menu_main"
+        app:layout_insetEdge="bottom"/>
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

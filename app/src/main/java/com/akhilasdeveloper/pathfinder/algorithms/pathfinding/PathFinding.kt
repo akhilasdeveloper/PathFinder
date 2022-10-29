@@ -1,14 +1,21 @@
 package com.akhilasdeveloper.pathfinder.algorithms.pathfinding
 
 import com.akhilasdeveloper.pathfinder.MainActivity
+import com.akhilasdeveloper.pathfinder.algorithms.HeapMinHash
 import com.akhilasdeveloper.pathfinder.models.nodes
 import com.akhilasdeveloper.pathfinder.views.Keys
 import com.akhilasdeveloper.spangridview.models.Point
 import kotlinx.coroutines.*
-import kotlinx.coroutines.Dispatchers.Main
+import kotlin.math.abs
 
+const val DIJKSTRA = "Dijkstra"
+const val ASTAR = "A*"
+const val BFS = "BFS"
+const val DFS = "DFS"
 
-internal fun MainActivity.findPathDijkstra() {
+internal var heapMin: HeapMinHash<Point> = HeapMinHash()
+
+internal fun MainActivity.findPath(type: String) {
 
     CoroutineScope(Dispatchers.Default).launch {
 
@@ -32,8 +39,10 @@ internal fun MainActivity.findPathDijkstra() {
              */
             val node = heapMin.pull(gridHash)
             if (node == null){
-                withContext(Main){
-                    setPathMessage("Dijkstra")
+                withContext(Dispatchers.Main){
+                    setMessage("$type: Path Not Fount")
+                    gridCanvasView.drawEnabled = false
+                    executionCompleted = true
                 }
                 break
             }
@@ -55,8 +64,10 @@ internal fun MainActivity.findPathDijkstra() {
                     }
                     n = gridHash[n]?.previous!!
                 }
-                withContext(Main){
-                    setPathMessage("Dijkstra")
+                withContext(Dispatchers.Main){
+                    setPathMessage(type)
+                    gridCanvasView.drawEnabled = false
+                    executionCompleted = true
                 }
                 break
             } else {
@@ -81,12 +92,38 @@ internal fun MainActivity.findPathDijkstra() {
              * if the distance is greater, then assign short distance + 1 to neighbours
              */
             neighbours.forEach {
-                val dis = gridHash[shortNode]!!.distance + gridHash[it]!!.weight
-                if (dis < gridHash[it]!!.distance) {
-                    gridHash[it]!!.distance = dis
-                    heapMin.push(it, gridHash)
+                when(type){
+                    DIJKSTRA->{
+                        val dis = gridHash[shortNode]!!.distance + gridHash[it]!!.weight
+                        if (dis < gridHash[it]!!.distance) {
+                            gridHash[it]!!.distance = dis
+                            heapMin.push(it, gridHash)
+                        }
+                        gridHash[it]!!.previous = shortNode
+                    }
+                    ASTAR->{
+                        val tempG = gridHash[shortNode]!!.g + gridHash[it]!!.weight
+                        gridHash[it]!!.g = tempG
+
+                        gridHash[it]!!.h = heuristic(it, endP)
+                        gridHash[it]!!.distance = gridHash[it]!!.g + gridHash[it]!!.h
+                        heapMin.push(it, gridHash)
+
+                        gridHash[it]!!.previous = shortNode
+                    }
+                    BFS->{
+                        val dis = gridHash[shortNode]!!.distance + 1
+                        if (dis < gridHash[it]!!.distance) {
+                            gridHash[it]!!.distance = dis
+                            heapMin.push(it, gridHash)
+                        }
+                        gridHash[it]!!.previous = shortNode
+                    }
+                    DFS->{
+
+                    }
                 }
-                gridHash[it]!!.previous = shortNode
+
             }
 
         }
@@ -94,10 +131,6 @@ internal fun MainActivity.findPathDijkstra() {
 
     }
 }
-
-/**
- * Function to find neighbours (top, left, bottom, right) of the short distance node
- */
 
 internal fun MainActivity.getNeighbours(
     shortPoint: Point
@@ -134,3 +167,5 @@ internal fun MainActivity.getNeighbours(
 }
 
 internal fun MainActivity.getData(index: Point) = gridHash.getOrPut(index) { nodes() }
+
+internal fun heuristic(nei: Point, endP: Point): Int = abs(nei.x - endP.x) + abs(nei.y - endP.y)

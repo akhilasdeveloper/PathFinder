@@ -3,15 +3,17 @@ package com.akhilasdeveloper.pathfinder
 import android.os.Bundle
 import android.view.Menu
 import android.widget.LinearLayout
+import android.widget.ScrollView
+import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import androidx.core.content.res.ResourcesCompat
+import androidx.core.widget.NestedScrollView
 import androidx.recyclerview.widget.GridLayoutManager
-import com.akhilasdeveloper.pathfinder.algorithms.HeapMinHash
 import com.akhilasdeveloper.pathfinder.algorithms.NodeListClickListener
 import com.akhilasdeveloper.pathfinder.algorithms.ShareRecyclerAdapter
 import com.akhilasdeveloper.pathfinder.algorithms.pathfinding.*
-import com.akhilasdeveloper.pathfinder.algorithms.pathfinding.findPathDijkstra
 import com.akhilasdeveloper.pathfinder.algorithms.pathfinding.generateRecursiveMaze
 import com.akhilasdeveloper.pathfinder.algorithms.pathfinding.getData
 import com.akhilasdeveloper.pathfinder.databinding.ActivityMainBinding
@@ -34,6 +36,7 @@ class MainActivity : AppCompatActivity(), NodeListClickListener {
     private val binding get() = _binding!!
     private lateinit var bottomSheetBehavior: BottomSheetBehavior<LinearLayout>
     private lateinit var bottomSheetSettingsBehavior: BottomSheetBehavior<LinearLayout>
+    private lateinit var bottomSheetMessagedBehavior: BottomSheetBehavior<NestedScrollView>
     internal lateinit var gridCanvasView: SpanGridView
     internal var startPont: Point? = null
     internal var endPont: Point? = null
@@ -41,16 +44,17 @@ class MainActivity : AppCompatActivity(), NodeListClickListener {
     private var gridHashBackup: HashMap<Point, Square> = hashMapOf()
     private var xHash: HashMap<Int, Int> = hashMapOf()
     private var yHash: HashMap<Int, Int> = hashMapOf()
-    internal var heapMin: HeapMinHash<Point> = HeapMinHash()
     internal var sleepVal = 0L
     internal var sleepValPath = 0L
+    private var totalDelayMillis = 0L
     private var startedTimeInMillis = 0L
     internal var visitedNodesCount = 0
     internal var pathNodesCount = 0
+    internal var executionCompleted = false
 
     private lateinit var shareListAdapter: ShareRecyclerAdapter
 
-    private var selectedItem = START
+    private var selectedNode = START
         set(value) {
             clearSelection(field)
             field = value
@@ -65,9 +69,6 @@ class MainActivity : AppCompatActivity(), NodeListClickListener {
         }
 
     private val cellList: ArrayList<CellItem> = arrayListOf()
-    private val pathAlgorithmList: ArrayList<String> = arrayListOf()
-    private val gridAlgorithmList: ArrayList<String> = arrayListOf()
-
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -86,6 +87,19 @@ class MainActivity : AppCompatActivity(), NodeListClickListener {
 
             override fun onModeChange(mode: Int) {
 
+                binding.bottomAppBar.menu.findItem(R.id.viewMode)?.let { menuItem ->
+                    menuItem.icon = ResourcesCompat.getDrawable(
+                        resources,
+                        if (mode == gridCanvasView.MODE_DRAW) {
+                            if (executionCompleted)
+                                reset()
+                            clearGridHashBackup()
+                            R.drawable.ic_eye
+                        } else {
+                            R.drawable.ic_eye_off
+                        }, theme
+                    )
+                }
             }
         })
 
@@ -107,6 +121,23 @@ class MainActivity : AppCompatActivity(), NodeListClickListener {
                     reset()
                     true
                 }
+                R.id.clearAll -> {
+                    resetAll()
+                    true
+                }
+                R.id.viewMode -> {
+                    gridCanvasView.drawEnabled = !gridCanvasView.drawEnabled
+                    true
+                }
+                R.id.info -> {
+                    if (bottomSheetMessagedBehavior.state == BottomSheetBehavior.STATE_EXPANDED) {
+                        bottomSheetMessagedBehavior.state = BottomSheetBehavior.STATE_HIDDEN
+                    } else {
+                        bottomSheetMessagedBehavior.state = BottomSheetBehavior.STATE_EXPANDED
+                    }
+
+                    true
+                }
                 R.id.grid -> {
                     val items = arrayOf("Recursive")
 
@@ -124,53 +155,19 @@ class MainActivity : AppCompatActivity(), NodeListClickListener {
                 }
                 R.id.play -> {
 
-                    val items = arrayOf("Dijkstra", "A*", "BFS", "DFS")
+                    val items = arrayOf(DIJKSTRA, ASTAR, BFS, DFS)
 
                     MaterialAlertDialogBuilder(this)
                         .setTitle("Select Path Algorithm")
                         .setItems(items) { _, which ->
-                            when (which) {
-                                0 -> {
-                                    if (startPont != null && endPont != null)
-                                        findPathDijkstra()
-                                    else
-                                        Toast.makeText(
-                                            this,
-                                            "Please select start point and end point",
-                                            Toast.LENGTH_SHORT
-                                        ).show()
-                                }
-                                1 -> {
-                                    if (startPont != null && endPont != null)
-                                        findAStar()
-                                    else
-                                        Toast.makeText(
-                                            this,
-                                            "Please select start point and end point",
-                                            Toast.LENGTH_SHORT
-                                        ).show()
-                                }
-                                2 -> {
-                                    if (startPont != null && endPont != null)
-                                        findPathBFS()
-                                    else
-                                        Toast.makeText(
-                                            this,
-                                            "Please select start point and end point",
-                                            Toast.LENGTH_SHORT
-                                        ).show()
-                                }
-                                3 -> {
-                                    if (startPont != null && endPont != null)
-                                        findPathDFS()
-                                    else
-                                        Toast.makeText(
-                                            this,
-                                            "Please select start point and end point",
-                                            Toast.LENGTH_SHORT
-                                        ).show()
-                                }
-                            }
+                            if (startPont != null && endPont != null)
+                                findPath(items[which])
+                            else
+                                Toast.makeText(
+                                    this,
+                                    "Please select start point and end point",
+                                    Toast.LENGTH_SHORT
+                                ).show()
                         }
                         .show()
 
@@ -193,14 +190,14 @@ class MainActivity : AppCompatActivity(), NodeListClickListener {
 
     private fun plotPointOnTouch(px: Point) {
 
-        when (selectedItem) {
+        when (selectedNode) {
 
             Keys.START -> {
                 startPont?.let { start ->
                     clearBit(start)
                 }
                 startPont = px
-                setBit(px, selectedItem)
+                setBit(px, selectedNode)
 
             }
             Keys.END -> {
@@ -210,7 +207,7 @@ class MainActivity : AppCompatActivity(), NodeListClickListener {
                 }
 
                 endPont = px
-                setBit(px, selectedItem)
+                setBit(px, selectedNode)
 
             }
             Keys.AIR -> {
@@ -221,7 +218,7 @@ class MainActivity : AppCompatActivity(), NodeListClickListener {
                     endPont = null
             }
             else -> {
-                setBit(px, selectedItem)
+                setBit(px, selectedNode)
             }
 
         }
@@ -230,6 +227,7 @@ class MainActivity : AppCompatActivity(), NodeListClickListener {
     private fun init() {
         bottomSheetBehavior = BottomSheetBehavior.from(binding.bottomSheet)
         bottomSheetSettingsBehavior = BottomSheetBehavior.from(binding.bottomSheetSettings)
+        bottomSheetMessagedBehavior = BottomSheetBehavior.from(binding.bottomSheetMessage)
         gridCanvasView = binding.gridViewHolder
         gridCanvasView.brushSize = brushSize
         gridCanvasView.post {
@@ -254,25 +252,26 @@ class MainActivity : AppCompatActivity(), NodeListClickListener {
 
         val cells = arrayListOf<CellItem>()
         for (node in nodes) {
-            cells.add(CellItem(
-                cell = nodes(node)
-            ))
+            cells.add(
+                CellItem(
+                    cell = nodes(node)
+                )
+            )
         }
 
         cellList.addAll(cells.sortedBy { it.cell.weight }.toList())
 
-        pathAlgorithmList.add("Digkstra")
-        gridAlgorithmList.add("Recursive Maze")
     }
 
-    private fun findArrayPosition(type: Int):Int?{
+    private fun findArrayPosition(type: Int): Int? {
         cellList.forEachIndexed { index, cellItem ->
             if (cellItem.cell.type == type)
                 return index
         }
         return null
     }
-    private fun clearSelection(type: Int){
+
+    private fun clearSelection(type: Int) {
         findArrayPosition(type)?.let {
             cellList[it].selected = false
             shareListAdapter.notifyItemChanged(it)
@@ -280,33 +279,48 @@ class MainActivity : AppCompatActivity(), NodeListClickListener {
     }
 
     private fun setSelection() {
-        findArrayPosition(selectedItem)?.let {
+        findArrayPosition(selectedNode)?.let {
             cellList[it].selected = true
             shareListAdapter.notifyItemChanged(it)
         }
-        setBrushSelectedMessage(selectedItem)
     }
 
-    private fun setBrushSelectedMessage(type: Int){
-        val message = "Plot " + nodes(type).name + if(type != START && type != END) "(s)" else ""
+
+    internal fun setPathMessage(title: String) {
+        val time = (System.currentTimeMillis() - startedTimeInMillis) - totalDelayMillis
+        val message =
+            "$title: Completed in ${time}ms ${if (totalDelayMillis > 0) "(excluding animation delay($totalDelayMillis))" else ""}.\nVisited: $visitedNodesCount Nodes\nPath Length: $pathNodesCount"
         setMessage(message)
     }
 
-    internal fun setPathMessage(title: String){
-        val time = System.currentTimeMillis() - startedTimeInMillis
-        val message = "$title: Completed in ${time}ms.\nVisited: $visitedNodesCount Nodes\nPath Length:$pathNodesCount"
-        setMessage(message)
-    }
-
-    internal fun reset(){
+    private fun resetVars(){
         startedTimeInMillis = System.currentTimeMillis()
         visitedNodesCount = 0
         pathNodesCount = 0
+        totalDelayMillis = 0
+        executionCompleted = false
+    }
+
+    private fun resetAll(){
+        resetVars()
+        gridHashBackup.clear()
+        gridHash.clear()
+        heapMin.clear()
+        gridCanvasView.clearData()
+        gridCanvasView.postInvalidate()
+        xHash.clear()
+        yHash.clear()
+        gaps.clear()
+        startPont = null
+        endPont = null
+    }
+
+    internal fun reset() {
+        resetVars()
         if (gridHashBackup.isEmpty()) {
             createBorder()
             copyGridHash()
-        }
-        else {
+        } else {
             gridHash.clear()
             heapMin.clear()
             restoreGridHash()
@@ -314,27 +328,34 @@ class MainActivity : AppCompatActivity(), NodeListClickListener {
         repopulateGrid()
     }
 
+    private fun clearGridHashBackup(){
+        gridHashBackup.clear()
+    }
+
     private fun restoreGridHash() {
-        for (data in gridHashBackup){
+        for (data in gridHashBackup) {
             gridHash[data.key] = nodes(type = data.value.type)
         }
     }
 
-    private fun copyGridHash(){
-        for (data in gridHash){
+    private fun copyGridHash() {
+        for (data in gridHash) {
             gridHashBackup[data.key] = nodes(type = data.value.type)
         }
     }
 
     private fun repopulateGrid() {
         gridCanvasView.clearData()
-        for(data in gridHash){
+        for (data in gridHash) {
             setBit(data.key, data.value.type)
         }
     }
 
-    private fun setMessage(string: String){
-        binding.message.text = string
+    internal fun setMessage(string: String) {
+        val message = binding.message.text
+        val newMessage = "$message\n\n$string"
+        binding.message.text = newMessage
+        bottomSheetMessagedBehavior.state = BottomSheetBehavior.STATE_EXPANDED
     }
 
     override fun onCreateOptionsMenu(menu: Menu?): Boolean {
@@ -343,7 +364,7 @@ class MainActivity : AppCompatActivity(), NodeListClickListener {
     }
 
     private fun setBrushSize() {
-        if (selectedItem == START || selectedItem == END)
+        if (selectedNode == START || selectedNode == END)
             gridCanvasView.brushSize = 1
         else
             gridCanvasView.brushSize = brushSize
@@ -368,6 +389,9 @@ class MainActivity : AppCompatActivity(), NodeListClickListener {
     }
 
     internal fun setBit(point: Point, type: Int) {
+
+        totalDelayMillis += sleepVal
+
         setXY(point)
 
         val data = getData(point).copyToType(type = type)
@@ -432,7 +456,7 @@ class MainActivity : AppCompatActivity(), NodeListClickListener {
         return Point(0, 0)
     }
 
-    internal fun createBorder() {
+    private fun createBorder() {
         var minPoint = getMinXY()
         var maxPoint = getMaxXY()
 
@@ -453,8 +477,12 @@ class MainActivity : AppCompatActivity(), NodeListClickListener {
     }
 
     override fun onItemClicked(cellItem: CellItem) {
-        selectedItem = cellItem.cell.type
+        selectedNode = cellItem.cell.type
         bottomSheetBehavior.state = BottomSheetBehavior.STATE_HIDDEN
+        gridCanvasView.drawEnabled = true
+        if (executionCompleted)
+            reset()
+        clearGridHashBackup()
     }
 
 }

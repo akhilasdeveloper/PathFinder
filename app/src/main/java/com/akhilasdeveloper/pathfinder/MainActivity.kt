@@ -11,7 +11,7 @@ import com.akhilasdeveloper.pathfinder.algorithms.HeapMinHash
 import com.akhilasdeveloper.pathfinder.algorithms.NodeListClickListener
 import com.akhilasdeveloper.pathfinder.algorithms.ShareRecyclerAdapter
 import com.akhilasdeveloper.pathfinder.algorithms.pathfinding.*
-import com.akhilasdeveloper.pathfinder.algorithms.pathfinding.findPathDijkstr
+import com.akhilasdeveloper.pathfinder.algorithms.pathfinding.findPathDijkstra
 import com.akhilasdeveloper.pathfinder.algorithms.pathfinding.generateRecursiveMaze
 import com.akhilasdeveloper.pathfinder.algorithms.pathfinding.getData
 import com.akhilasdeveloper.pathfinder.databinding.ActivityMainBinding
@@ -37,13 +37,16 @@ class MainActivity : AppCompatActivity(), NodeListClickListener {
     internal lateinit var gridCanvasView: SpanGridView
     internal var startPont: Point? = null
     internal var endPont: Point? = null
-    internal var gaps = mutableListOf<Point>()
     internal var gridHash: HashMap<Point, Square> = hashMapOf()
+    private var gridHashBackup: HashMap<Point, Square> = hashMapOf()
     private var xHash: HashMap<Int, Int> = hashMapOf()
     private var yHash: HashMap<Int, Int> = hashMapOf()
     internal var heapMin: HeapMinHash<Point> = HeapMinHash()
     internal var sleepVal = 0L
     internal var sleepValPath = 0L
+    private var startedTimeInMillis = 0L
+    internal var visitedNodesCount = 0
+    internal var pathNodesCount = 0
 
     private lateinit var shareListAdapter: ShareRecyclerAdapter
 
@@ -100,6 +103,10 @@ class MainActivity : AppCompatActivity(), NodeListClickListener {
                     bottomSheetBehavior.state = BottomSheetBehavior.STATE_EXPANDED
                     true
                 }
+                R.id.clear -> {
+                    reset()
+                    true
+                }
                 R.id.grid -> {
                     val items = arrayOf("Recursive")
 
@@ -125,7 +132,7 @@ class MainActivity : AppCompatActivity(), NodeListClickListener {
                             when (which) {
                                 0 -> {
                                     if (startPont != null && endPont != null)
-                                        findPathDijkstr()
+                                        findPathDijkstra()
                                     else
                                         Toast.makeText(
                                             this,
@@ -277,6 +284,57 @@ class MainActivity : AppCompatActivity(), NodeListClickListener {
             cellList[it].selected = true
             shareListAdapter.notifyItemChanged(it)
         }
+        setBrushSelectedMessage(selectedItem)
+    }
+
+    private fun setBrushSelectedMessage(type: Int){
+        val message = "Plot " + nodes(type).name + if(type != START && type != END) "(s)" else ""
+        setMessage(message)
+    }
+
+    internal fun setPathMessage(title: String){
+        val time = System.currentTimeMillis() - startedTimeInMillis
+        val message = "$title: Completed in ${time}ms.\nVisited: $visitedNodesCount Nodes\nPath Length:$pathNodesCount"
+        setMessage(message)
+    }
+
+    internal fun reset(){
+        startedTimeInMillis = System.currentTimeMillis()
+        visitedNodesCount = 0
+        pathNodesCount = 0
+        if (gridHashBackup.isEmpty()) {
+            createBorder()
+            copyGridHash()
+        }
+        else {
+            gridHash.clear()
+            heapMin.clear()
+            restoreGridHash()
+        }
+        repopulateGrid()
+    }
+
+    private fun restoreGridHash() {
+        for (data in gridHashBackup){
+            gridHash[data.key] = nodes(type = data.value.type)
+        }
+    }
+
+    private fun copyGridHash(){
+        for (data in gridHash){
+            gridHashBackup[data.key] = nodes(type = data.value.type)
+        }
+    }
+
+    private fun repopulateGrid() {
+        gridCanvasView.clearData()
+        for(data in gridHash){
+            setBit(data.key, data.value.type)
+        }
+    }
+
+    private fun setMessage(string: String){
+        binding.message.text = string
     }
 
     override fun onCreateOptionsMenu(menu: Menu?): Boolean {

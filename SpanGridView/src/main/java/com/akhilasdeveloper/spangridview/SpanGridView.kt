@@ -2,9 +2,13 @@ package com.akhilasdeveloper.spangridview
 
 import android.content.Context
 import android.graphics.Canvas
+import android.graphics.Color
 import android.graphics.Paint
 import android.util.AttributeSet
-import android.view.*
+import android.view.GestureDetector
+import android.view.MotionEvent
+import android.view.ScaleGestureDetector
+import android.view.View
 import androidx.core.content.res.ResourcesCompat
 import androidx.dynamicanimation.animation.FlingAnimation
 import androidx.dynamicanimation.animation.FloatPropertyCompat
@@ -63,7 +67,9 @@ class SpanGridView(
     }
     private var mListener: OnGridSelectListener? = null
     private var points = ConcurrentHashMap<Point, Node>()
-    private val historyQuad = QuadTree(RectangleCentered(0f, 0f, Int.MAX_VALUE.toFloat(), Int.MAX_VALUE.toFloat()), 4)
+    private var historyQuad = createQuadTree()
+
+    private fun createQuadTree() = QuadTree(RectangleCentered(0f, 0f, Int.MAX_VALUE.toFloat(), Int.MAX_VALUE.toFloat()), 4)
 
     var gridColor = ResourcesCompat.getColor(resources, R.color.grid_color, null)
     var lineColor = ResourcesCompat.getColor(resources, R.color.line_color, null)
@@ -109,6 +115,7 @@ class SpanGridView(
             this.setGridSize()
         }
 
+    private var _textSize: Float = 12f
     private var _lineWidth: Float = 1f
     private var _strokeWidth: Float = 5f
 
@@ -253,6 +260,7 @@ class SpanGridView(
                 val scale = resolution * detector.scaleFactor
                 if (scale in scaleLimitStart..scaleLimitEnd) {
 
+                    _textSize *= detector.scaleFactor
                     _lineWidth *= detector.scaleFactor
                     _strokeWidth *= detector.scaleFactor
 
@@ -281,6 +289,11 @@ class SpanGridView(
         maxTranslationY = height.toFloat() / 2
 
         setGridSize()
+    }
+
+    fun clearData(){
+        points.clear()
+        historyQuad = createQuadTree()
     }
 
     /***
@@ -358,7 +371,6 @@ class SpanGridView(
         super.performClick()
         return true
     }
-
 
     fun plotPoint(px: Point, color: Int, strokeColor: Int) {
         val pointNode = PointNode(x = px.x, y = px.y, fill = color, stroke = strokeColor)
@@ -523,6 +535,18 @@ class SpanGridView(
                     paint
                 )
             }
+
+            /*if (resolution >= 50f) {
+                val text = px.text
+                paint.textSize = _textSize
+                paint.color = Color.WHITE
+                paint.textAlign = Paint.Align.CENTER
+
+                val xPos: Float = px.x1 + ((px.x2 - px.x1) / 2)
+                val yPos = px.y1 + (((px.y2 - px.y1) / 2 - (paint.descent() + paint.ascent()) / 2))
+
+                drawText(text, xPos, yPos, paint)
+            }*/
 
         }
     }

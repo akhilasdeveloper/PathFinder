@@ -20,6 +20,11 @@ class HeapMinHash<T> {
     private fun rightChild(index: Int) = heapMin[getRightChildIndex(index)]
     private fun parent(index: Int) = heapMin[getParentIndex(index)]
 
+    fun clear(){
+        heapMin.clear()
+        data.clear()
+    }
+
     fun pull(data: HashMap<T, Square>?): T? {
         this.data = data ?: hashMapOf()
         if (heapMin.size == 0) return null

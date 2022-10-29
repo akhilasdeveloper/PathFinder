@@ -23,6 +23,7 @@
     <color name="path">#FFE500</color>
     <color name="visited">#D8E9A8</color>
 
+    <color name="messageColor">#88333333</color>
     <color name="cardColor">#E6E6E6</color>
     <color name="cardColorSelected">#FFFFFF</color>
     <color name="rippleColor">#000000</color>

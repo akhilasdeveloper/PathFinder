@@ -7,14 +7,19 @@
         android:icon="@drawable/ic_baseline_edit_24"
         app:showAsAction="always"/>
 
+    <item android:title="Clear"
+        android:id="@+id/clear"
+        android:icon="@drawable/ic_round_clear_all_24"
+        app:showAsAction="ifRoom"/>
+
     <item android:title="Grid"
         android:id="@+id/grid"
         android:icon="@drawable/ic_baseline_grid_view_24"
-        app:showAsAction="always"/>
+        app:showAsAction="ifRoom" />
 
     <item android:title="Play"
         android:id="@+id/play"
         android:icon="@drawable/ic_round_play_arrow_24"
-        app:showAsAction="ifRoom"/>
+        app:showAsAction="always"/>
 
 </menu>

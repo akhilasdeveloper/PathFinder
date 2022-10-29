@@ -5,13 +5,14 @@ import com.akhilasdeveloper.pathfinder.models.nodes
 import com.akhilasdeveloper.pathfinder.views.Keys
 import com.akhilasdeveloper.spangridview.models.Point
 import kotlinx.coroutines.*
+import kotlinx.coroutines.Dispatchers.Main
 
 
-internal fun MainActivity.findPathDijkstr() {
+internal fun MainActivity.findPathDijkstra() {
 
     CoroutineScope(Dispatchers.Default).launch {
 
-        createBorder()
+        reset()
 
         val startP = startPont!!
         val endP = endPont!!
@@ -30,7 +31,13 @@ internal fun MainActivity.findPathDijkstr() {
              * if the heap returns null (heap is empty) the exit the loop. All nodes are visited and destination is not reachable
              */
             val node = heapMin.pull(gridHash)
-            val shortNode: Point = node ?: break
+            if (node == null){
+                withContext(Main){
+                    setPathMessage("Dijkstra")
+                }
+                break
+            }
+            val shortNode: Point = node
 
             /**
              * if short node == end node, then the destination is reached.
@@ -44,8 +51,12 @@ internal fun MainActivity.findPathDijkstr() {
                     val nodeN = gridHash[n]
                     if (nodeN?.type != Keys.START && nodeN?.type != Keys.END) {
                         setBit(n, Keys.PATH)
+                        pathNodesCount++
                     }
                     n = gridHash[n]?.previous!!
+                }
+                withContext(Main){
+                    setPathMessage("Dijkstra")
                 }
                 break
             } else {
@@ -56,6 +67,7 @@ internal fun MainActivity.findPathDijkstr() {
                         shortNode,
                         Keys.VISITED
                     )
+                    visitedNodesCount++
                 }
             }
 

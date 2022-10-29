@@ -9,6 +9,8 @@ import kotlinx.coroutines.launch
 import kotlin.math.floor
 import kotlin.random.Random
 
+private var gaps = mutableListOf<Point>()
+
 internal fun MainActivity.generateRecursiveMaze() {
     CoroutineScope(Dispatchers.Default).launch {
         var gHeight = gridCanvasView.gridHeight.toInt()

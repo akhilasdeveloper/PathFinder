@@ -1,9 +1,6 @@
 package com.akhilasdeveloper.pathfinder.algorithms.pathfinding
 
-import com.akhilasdeveloper.pathfinder.algorithms.HeapMinHash
-import com.akhilasdeveloper.pathfinder.models.Keys
-import com.akhilasdeveloper.pathfinder.models.Square
-import com.akhilasdeveloper.pathfinder.models.nodes
+import com.akhilasdeveloper.pathfinder.R
 import com.akhilasdeveloper.spangridview.models.Point
 import kotlinx.coroutines.*
 import kotlin.math.abs
@@ -15,6 +12,88 @@ class FindPath {
         const val ASTAR = "A*"
         const val BFS = "BFS"
         const val DFS = "DFS"
+
+        const val AIR: Int = -2
+        const val GRANITE: Int = -3
+        const val GRASS: Int = -4
+        const val SAND: Int = -5
+        const val SNOW: Int = -6
+        const val STONE: Int = -7
+        const val WATER: Int = -8
+        const val WATER_DEEP: Int = -9
+        const val WALL: Int = -1
+        const val START: Int = -10
+        const val END: Int = -11
+        const val PATH: Int = -12
+        const val VISITED: Int = -13
+
+        val nodes = listOf(
+            START,
+            END,
+            WALL,
+            AIR,
+            GRANITE,
+            GRASS,
+            SAND,
+            SNOW,
+            STONE,
+            WATER,
+            WATER_DEEP
+        )
+
+        fun nodes(type: Int? = null): Square {
+            return when (type) {
+                WALL -> Square(
+                    name = "Wall Node",
+                    type = WALL,
+                    weight = Int.MAX_VALUE,
+                    color = R.color.block
+                )
+                START -> Square(
+                    name = "Start Node",
+                    type = START,
+                    distance = 0,
+                    color = R.color.start
+                )
+                END -> Square(name = "End Node", type = END, color = R.color.end)
+                PATH -> Square(name = "Path Node", type = PATH, color = R.color.path)
+                VISITED -> Square(name = "Visited Node", type = VISITED, color = R.color.visited)
+                AIR -> Square(name = "Air Node", type = AIR, color = R.color.empty)
+                GRANITE -> Square(
+                    name = "Granite Node",
+                    type = GRANITE,
+                    weight = 50,
+                    color = R.color.granite
+                )
+                GRASS -> Square(
+                    name = "Grass Node",
+                    type = GRASS,
+                    weight = 5,
+                    color = R.color.grass
+                )
+                SAND -> Square(name = "Sand Node", type = SAND, weight = 7, color = R.color.sand)
+                SNOW -> Square(name = "Snow Node", type = SNOW, weight = 75, color = R.color.snow)
+                STONE -> Square(
+                    name = "Stone Node",
+                    type = STONE,
+                    weight = 25,
+                    color = R.color.stone
+                )
+                WATER -> Square(
+                    name = "Water Node",
+                    type = WATER,
+                    weight = 50,
+                    color = R.color.water
+                )
+                WATER_DEEP -> Square(
+                    name = "Deep Water Node",
+                    type = WATER_DEEP,
+                    weight = 100,
+                    color = R.color.water_deep
+                )
+                else -> Square(name = "Air Node", type = AIR, color = R.color.empty)
+            }
+        }
     }
 
     private var gridHash: HashMap<Point, Square> = hashMapOf()
@@ -25,13 +104,12 @@ class FindPath {
     private var xHash: HashMap<Int, Int> = hashMapOf()
     private var yHash: HashMap<Int, Int> = hashMapOf()
     var sleepVal = 0L
-    var sleepValPath = 0L
     private var totalDelayMillis = 0L
     private var startedTimeInMillis = 0L
     private var visitedNodesCount = 0
     private var pathNodesCount = 0
     var executionCompleted = false
-        private set
+    private set
     private var mListener: OnPathFindListener? = null
 
     data class PathSummary(
@@ -50,16 +128,23 @@ class FindPath {
     }
 
     fun reset() {
+
         resetVars()
         if (gridHashBackup.isEmpty()) {
-            createBorder()
             copyGridHash()
         } else {
             gridHash.clear()
             heapMin.clear()
             restoreGridHash()
         }
+        createBorder(true)
         mListener?.onReset(gridHash.toMap())
+    }
+
+    fun resetForDrawing(){
+        if (executionCompleted)
+            reset()
+        gridHashBackup.clear()
     }
 
     fun resetAll() {
@@ -69,7 +154,6 @@ class FindPath {
         heapMin.clear()
         xHash.clear()
         yHash.clear()
-        gaps.clear()
         startPont = null
         endPont = null
         mListener?.onResetAll()
@@ -87,7 +171,7 @@ class FindPath {
         }
     }
 
-    private fun createBorder() {
+    private fun createBorder(isRemove:Boolean = false) {
         var minPoint = getMinXY()
         var maxPoint = getMaxXY()
 
@@ -104,21 +188,31 @@ class FindPath {
         val width = maxPoint.x - minPoint.x
         val height = maxPoint.y - minPoint.y
 
-        generateBorder(minPoint, width, height)
+        generateBorder(minPoint, width, height, isRemove)
     }
 
-    fun generateBorder(startPoint: Point, gWidth: Int, gHeight: Int) {
+    private fun generateBorder(startPoint: Point, gWidth: Int, gHeight: Int, isRemove: Boolean) {
 
         val xEnd = gWidth + startPoint.x
         val yEnd = gHeight + startPoint.y
 
         for (i in startPoint.x until xEnd) {
-            addData(Point(i, startPoint.y), Keys.WALL)
-            addData(Point(i, yEnd), Keys.WALL)
+            if (isRemove){
+                removeData(Point(i, startPoint.y))
+                removeData(Point(i, yEnd))
+            }else{
+                addData(Point(i, startPoint.y), WALL)
+                addData(Point(i, yEnd), WALL)
+            }
         }
         for (j in startPoint.y until yEnd + 1) {
-            addData(Point(startPoint.x, j), Keys.WALL)
-            addData(Point(xEnd, j), Keys.WALL)
+            if (isRemove) {
+                removeData(Point(startPoint.x, j))
+                removeData(Point(xEnd, j))
+            }else{
+                addData(Point(startPoint.x, j), WALL)
+                addData(Point(xEnd, j), WALL)
+            }
         }
     }
 
@@ -142,7 +236,7 @@ class FindPath {
         return Point(0, 0)
     }
 
-    fun addData(point: Point, type: Int){
+    fun addData(point: Point, type: Int) {
         totalDelayMillis += sleepVal
 
         setXY(point)
@@ -154,7 +248,7 @@ class FindPath {
 
     }
 
-    fun removeData(point: Point){
+    fun removeData(point: Point) {
         clearXY(point)
         gridHash.remove(point)
         mListener?.clearPoint(point)
@@ -188,9 +282,16 @@ class FindPath {
 
     fun findPath(type: String) {
 
+        if (startPont == null || endPont == null) {
+            mListener?.onError("Please select start point and end point")
+            return
+        }
+
+
         CoroutineScope(Dispatchers.Default).launch {
 
             reset()
+            createBorder()
 
             val startP = startPont!!
             val endP = endPont!!
@@ -202,7 +303,7 @@ class FindPath {
             while (true) {
 
                 /** animation delay*/
-                delay(sleepValPath)
+                delay(sleepVal)
 
                 /**
                  * fetch short node from heap
@@ -230,8 +331,8 @@ class FindPath {
                     while (n != startP) {
                         delay(sleepVal)
                         val nodeN = gridHash[n]
-                        if (nodeN?.type != Keys.START && nodeN?.type != Keys.END) {
-                            addData(n, Keys.PATH)
+                        if (nodeN?.type != START && nodeN?.type != END) {
+                            addData(n, PATH)
                             pathNodesCount++
                         }
                         n = gridHash[n]?.previous!!
@@ -252,10 +353,10 @@ class FindPath {
                 } else {
                     if (gridHash[shortNode]?.distance == Int.MAX_VALUE) break
                     val nodeN = gridHash[shortNode]
-                    if (nodeN?.type != Keys.START) {
+                    if (nodeN?.type != START) {
                         addData(
                             shortNode,
-                            Keys.VISITED
+                            VISITED
                         )
                         visitedNodesCount++
                     }
@@ -329,15 +430,15 @@ class FindPath {
 
         points.forEach { p ->
             val data = getData(p)
-            if (data.type == Keys.END ||
-                data.type == Keys.AIR ||
-                data.type == Keys.GRANITE ||
-                data.type == Keys.GRASS ||
-                data.type == Keys.SAND ||
-                data.type == Keys.SNOW ||
-                data.type == Keys.STONE ||
-                data.type == Keys.WATER ||
-                data.type == Keys.WATER_DEEP
+            if (data.type == END ||
+                data.type == AIR ||
+                data.type == GRANITE ||
+                data.type == GRASS ||
+                data.type == SAND ||
+                data.type == SNOW ||
+                data.type == STONE ||
+                data.type == WATER ||
+                data.type == WATER_DEEP
             ) {
                 n.add(p)
             }
@@ -355,10 +456,36 @@ class FindPath {
 
     interface OnPathFindListener {
         fun onPathNotFound(type: String)
+        fun onError(message: String)
         fun onPathFound(type: String, summary: PathSummary)
         fun drawPoint(px: Point, color1: Int, color2: Int)
         fun clearPoint(px: Point)
         fun onReset(gridHash: Map<Point, Square>)
         fun onResetAll()
     }
+
+    data class Square(
+        var name: String,
+        var type: Int,
+        var distance: Int = Int.MAX_VALUE,
+        var weight: Int = 1,
+        var previous: Point? = null,
+        var color: Int,
+        var fillColor: Int = color,
+
+        var f: Int = 0,
+        var g: Int = 0,
+        var h: Int = 0,
+    ) {
+
+        fun copyToType(type: Int): Square {
+            val node = nodes(type)
+            val color =
+                if ((type == PATH || type == VISITED) && this.type != AIR) this.color else node.color
+            return node.copy(distance = this.distance, previous = this.previous, color = color)
+        }
+
+    }
+
+
 }

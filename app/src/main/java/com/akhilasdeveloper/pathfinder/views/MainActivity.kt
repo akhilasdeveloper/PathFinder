@@ -14,24 +14,23 @@ import com.akhilasdeveloper.pathfinder.R
 import com.akhilasdeveloper.pathfinder.algorithms.NodeListClickListener
 import com.akhilasdeveloper.pathfinder.algorithms.ShareRecyclerAdapter
 import com.akhilasdeveloper.pathfinder.algorithms.pathfinding.*
+import com.akhilasdeveloper.pathfinder.algorithms.pathfinding.FindPath.Companion.AIR
 import com.akhilasdeveloper.pathfinder.algorithms.pathfinding.FindPath.Companion.ASTAR
 import com.akhilasdeveloper.pathfinder.algorithms.pathfinding.FindPath.Companion.BFS
 import com.akhilasdeveloper.pathfinder.algorithms.pathfinding.FindPath.Companion.DFS
 import com.akhilasdeveloper.pathfinder.algorithms.pathfinding.FindPath.Companion.DIJKSTRA
-import com.akhilasdeveloper.pathfinder.algorithms.pathfinding.generateRecursiveMaze
+import com.akhilasdeveloper.pathfinder.algorithms.pathfinding.FindPath.Companion.END
+import com.akhilasdeveloper.pathfinder.algorithms.pathfinding.FindPath.Companion.START
+import com.akhilasdeveloper.pathfinder.algorithms.pathfinding.FindPath.Companion.WALL
+import com.akhilasdeveloper.pathfinder.algorithms.pathfinding.FindPath.Companion.nodes
 import com.akhilasdeveloper.pathfinder.databinding.ActivityMainBinding
 import com.akhilasdeveloper.pathfinder.models.CellItem
-import com.akhilasdeveloper.pathfinder.models.Square
-import com.akhilasdeveloper.pathfinder.models.nodes
-import com.akhilasdeveloper.pathfinder.models.Keys
-import com.akhilasdeveloper.pathfinder.models.Keys.END
-import com.akhilasdeveloper.pathfinder.models.Keys.START
 import com.akhilasdeveloper.spangridview.SpanGridView
+import com.akhilasdeveloper.spangridview.SpanGridView.Companion.MODE_DRAW
 import com.akhilasdeveloper.spangridview.models.Point
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import dagger.hilt.android.AndroidEntryPoint
-import kotlinx.coroutines.*
 
 @AndroidEntryPoint
 class MainActivity : AppCompatActivity(), NodeListClickListener {
@@ -42,7 +41,8 @@ class MainActivity : AppCompatActivity(), NodeListClickListener {
     private lateinit var bottomSheetSettingsBehavior: BottomSheetBehavior<LinearLayout>
     private lateinit var bottomSheetMessagedBehavior: BottomSheetBehavior<NestedScrollView>
     internal lateinit var gridCanvasView: SpanGridView
-    internal var findPath: FindPath = FindPath()
+    private var findPath: FindPath = FindPath()
+    private var generateMaze: GenerateMaze = GenerateMaze()
 
     private lateinit var shareListAdapter: ShareRecyclerAdapter
 
@@ -82,10 +82,8 @@ class MainActivity : AppCompatActivity(), NodeListClickListener {
                 binding.bottomAppBar.menu.findItem(R.id.viewMode)?.let { menuItem ->
                     menuItem.icon = ResourcesCompat.getDrawable(
                         resources,
-                        if (mode == gridCanvasView.MODE_DRAW) {
-                            /*if (findPath.executionCompleted)
-                                reset()
-                            clearGridHashBackup()*/
+                        if (mode == MODE_DRAW) {
+                            findPath.resetForDrawing()
                             R.drawable.ic_eye
                         } else {
                             R.drawable.ic_eye_off
@@ -95,15 +93,30 @@ class MainActivity : AppCompatActivity(), NodeListClickListener {
             }
         })
 
+        generateMaze.setMazeGenerateListener(object :GenerateMaze.OnMazeGenerateListener{
+            override fun addData(px: Point) {
+                findPath.addData(px, WALL)
+            }
+
+            override fun removeData(px: Point) {
+                findPath.removeData(px)
+            }
+
+        })
+
         findPath.setPathFindListener(object :FindPath.OnPathFindListener{
             override fun onPathNotFound(type: String) {
                 setMessage("$type: Path Not Fount")
                 gridCanvasView.drawEnabled = false
             }
 
+            override fun onError(message: String) {
+                Toast.makeText(this@MainActivity,message,Toast.LENGTH_LONG).show()
+            }
+
             override fun onPathFound(type: String, summary: FindPath.PathSummary) {
                 val message =
-                    "$title: Completed in ${summary.timeMillis}ms ${if (summary.totalDelayMillis > 0) "(excluding animation delay(${summary.totalDelayMillis}))" else ""}.\nVisited: ${summary.visitedNodesCount} Nodes\nPath Length: ${summary.pathNodesCount}"
+                    "$type: Completed in ${summary.timeMillis}ms ${if (summary.totalDelayMillis > 0) "(excluding animation delay(${summary.totalDelayMillis}))" else ""}.\nVisited: ${summary.visitedNodesCount} Nodes\nPath Length: ${summary.pathNodesCount}"
                 setMessage(message)
                 gridCanvasView.drawEnabled = false
             }
@@ -116,14 +129,12 @@ class MainActivity : AppCompatActivity(), NodeListClickListener {
                 clearBit(px)
             }
 
-            override fun onReset(gridHash: Map<Point, Square>) {
+            override fun onReset(gridHash: Map<Point, FindPath.Square>) {
                 repopulateGrid(gridHash)
             }
 
             override fun onResetAll() {
                 gridCanvasView.clearData()
-                gridCanvasView.postInvalidate()
-                gaps.clear()
             }
 
         })
@@ -166,8 +177,15 @@ class MainActivity : AppCompatActivity(), NodeListClickListener {
                         .setItems(items) { _, which ->
                             when (which) {
                                 0 -> {
-                                    gridCanvasView.drawEnabled = true
-                                    generateRecursiveMaze()
+                                    if (gridCanvasView.pointsOnScreen.isNotEmpty()){
+                                        showAlert("Points exist on current screen. Do you want to continue?", onOk = {
+                                            gridCanvasView.drawEnabled = true
+                                            generateRecursiveMaze()
+                                        })
+                                    }else{
+                                        gridCanvasView.drawEnabled = true
+                                        generateRecursiveMaze()
+                                    }
                                 }
                             }
                         }
@@ -181,14 +199,8 @@ class MainActivity : AppCompatActivity(), NodeListClickListener {
                     MaterialAlertDialogBuilder(this)
                         .setTitle("Select Path Algorithm")
                         .setItems(items) { _, which ->
-                            if (findPath.startPont != null && findPath.endPont != null)
                                 findPath.findPath(items[which])
-                            else
-                                Toast.makeText(
-                                    this,
-                                    "Please select start point and end point",
-                                    Toast.LENGTH_SHORT
-                                ).show()
+
                         }
                         .show()
 
@@ -204,16 +216,25 @@ class MainActivity : AppCompatActivity(), NodeListClickListener {
 
         binding.speedSlide.addOnChangeListener { _, value, _ ->
             findPath.sleepVal = value.toLong()
-            findPath.sleepValPath = value.toLong()
+            generateMaze.sleepVal = value.toLong()
         }
 
+    }
+
+    private fun generateRecursiveMaze() {
+
+        val gHeight = gridCanvasView.gridHeight.toInt()
+        val gWidth = gridCanvasView.gridWidth.toInt()
+        val startPoint = gridCanvasView.startPoint
+
+        generateMaze.generateRecursiveMaze(startPoint, gHeight, gWidth)
     }
 
     private fun plotPointOnTouch(px: Point) {
 
         when (selectedNode) {
 
-            Keys.START -> {
+            START -> {
                 findPath.startPont?.let { start ->
                     findPath.removeData(start)
                 }
@@ -221,7 +242,7 @@ class MainActivity : AppCompatActivity(), NodeListClickListener {
                 findPath.addData(px, selectedNode)
 
             }
-            Keys.END -> {
+            END -> {
 
                 findPath.endPont?.let { start ->
                     findPath.removeData(start)
@@ -231,7 +252,7 @@ class MainActivity : AppCompatActivity(), NodeListClickListener {
                 findPath.addData(px, selectedNode)
 
             }
-            Keys.AIR -> {
+            AIR -> {
                 findPath.removeData(px)
                 if (px == findPath.startPont)
                     findPath.startPont = null
@@ -307,7 +328,7 @@ class MainActivity : AppCompatActivity(), NodeListClickListener {
     }
 
 
-    private fun repopulateGrid(gridHash: Map<Point, Square>) {
+    private fun repopulateGrid(gridHash: Map<Point, FindPath.Square>) {
         gridCanvasView.clearData()
         for (data in gridHash) {
             findPath.addData(data.key, data.value.type)
@@ -333,23 +354,7 @@ class MainActivity : AppCompatActivity(), NodeListClickListener {
             gridCanvasView.brushSize = brushSize
     }
 
-    internal fun drawLineHor(x1: Int, x2: Int, y: Int) {
-        for (i in x1..x2) {
-            runBlocking {
-                delay(findPath.sleepVal)
-            }
-            findPath.addData(Point(i, y), Keys.WALL)
-        }
-    }
 
-    internal fun drawLineVer(y1: Int, y2: Int, x: Int) {
-        for (i in y1..y2) {
-            runBlocking {
-                delay(findPath.sleepVal)
-            }
-            findPath.addData(Point(x, i), Keys.WALL)
-        }
-    }
 
     private fun drawPoint(point: Point, color1: Int, color2: Int) {
 
@@ -370,6 +375,21 @@ class MainActivity : AppCompatActivity(), NodeListClickListener {
         selectedNode = cellItem.cell.type
         bottomSheetBehavior.toggleSheet()
         gridCanvasView.drawEnabled = true
+    }
+
+    private fun showAlert(message: String, onOk: (()->Unit)? =  null, onCancel: (()->Unit)? = null ){
+        MaterialAlertDialogBuilder(this,
+            R.style.ThemeOverlay_MaterialComponents_Dialog_Alert)
+            .setMessage(message)
+            .setNegativeButton("No") { dialog, _ ->
+                onCancel?.invoke()
+                dialog.dismiss()
+            }
+            .setPositiveButton("Yes") { dialog, _ ->
+                onOk?.invoke()
+                dialog.dismiss()
+            }
+            .show()
     }
 
 }

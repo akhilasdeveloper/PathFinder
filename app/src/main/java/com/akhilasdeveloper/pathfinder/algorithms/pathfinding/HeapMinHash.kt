@@ -1,11 +1,10 @@
-package com.akhilasdeveloper.pathfinder.algorithms
+package com.akhilasdeveloper.pathfinder.algorithms.pathfinding
 
-import com.akhilasdeveloper.pathfinder.models.Square
-import com.akhilasdeveloper.pathfinder.models.nodes
+import com.akhilasdeveloper.pathfinder.algorithms.pathfinding.FindPath.Companion.nodes
 
 class HeapMinHash<T> {
     private val heapMin: MutableList<T> = mutableListOf()
-    private var data: HashMap<T, Square> = hashMapOf()
+    private var data: HashMap<T, FindPath.Square> = hashMapOf()
 
     private fun getLeftChildIndex(parentIndex: Int) = 2 * parentIndex + 1
     private fun getRightChildIndex(parentIndex: Int) = 2 * parentIndex + 2
@@ -24,7 +23,7 @@ class HeapMinHash<T> {
         data.clear()
     }
 
-    fun pull(data: HashMap<T, Square>?): T? {
+    fun pull(data: HashMap<T, FindPath.Square>?): T? {
         this.data = data ?: hashMapOf()
         if (heapMin.size == 0) return null
         val item = heapMin[0]
@@ -34,7 +33,7 @@ class HeapMinHash<T> {
         return item
     }
 
-    fun push(item: T, data: HashMap<T, Square>?) {
+    fun push(item: T, data: HashMap<T, FindPath.Square>?) {
         this.data = data ?: hashMapOf()
         heapMin.add(item)
         heapUp()

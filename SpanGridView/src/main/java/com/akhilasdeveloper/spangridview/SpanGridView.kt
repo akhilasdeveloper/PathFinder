@@ -2,7 +2,6 @@ package com.akhilasdeveloper.spangridview
 
 import android.content.Context
 import android.graphics.Canvas
-import android.graphics.Color
 import android.graphics.Paint
 import android.util.AttributeSet
 import android.view.GestureDetector
@@ -46,14 +45,13 @@ class SpanGridView(
         init(null)
     }
 
-    val MODE_VIEW: Int = -2
-    val MODE_DRAW: Int = -3
+    companion object{
+        const val MODE_VIEW: Int = -2
+        const val MODE_DRAW: Int = -3
+    }
 
-    private val MIN_DISTANCE_MOVED = 50
-    private val FRICTION = 1.1f
-
-    private var maxTranslationX = 0f
-    private var maxTranslationY = 0f
+    private val minDistanceMoved = 50
+    private val friction = 1.1f
 
     private val scaleLimitStart = 20f
     private val scaleLimitEnd = 150f
@@ -66,10 +64,12 @@ class SpanGridView(
 
     }
     private var mListener: OnGridSelectListener? = null
-    private var points = ConcurrentHashMap<Point, Node>()
+    var pointsOnScreen = ConcurrentHashMap<Point, Node>()
+        private set
     private var historyQuad = createQuadTree()
 
-    private fun createQuadTree() = QuadTree(RectangleCentered(0f, 0f, Int.MAX_VALUE.toFloat(), Int.MAX_VALUE.toFloat()), 4)
+    private fun createQuadTree() =
+        QuadTree(RectangleCentered(0f, 0f, Int.MAX_VALUE.toFloat(), Int.MAX_VALUE.toFloat()), 4)
 
     var gridColor = ResourcesCompat.getColor(resources, R.color.grid_color, null)
     var lineColor = ResourcesCompat.getColor(resources, R.color.line_color, null)
@@ -179,8 +179,8 @@ class SpanGridView(
 
     }
 
-    private val flingX = FlingAnimation(this@SpanGridView, xFling).setFriction(FRICTION)
-    private val flingY = FlingAnimation(this@SpanGridView, yFling).setFriction(FRICTION)
+    private val flingX = FlingAnimation(this@SpanGridView, xFling).setFriction(friction)
+    private val flingY = FlingAnimation(this@SpanGridView, yFling).setFriction(friction)
 
     private fun init(set: AttributeSet?) {
         set?.let { attrSet ->
@@ -241,11 +241,11 @@ class SpanGridView(
                 val distanceInY: Float = abs(e2.rawY - e1.rawY)
 
 
-                if (distanceInX > MIN_DISTANCE_MOVED) {
+                if (distanceInX > minDistanceMoved) {
                     flingX.setStartVelocity(velocityX)
                         .start()
                 }
-                if (distanceInY > MIN_DISTANCE_MOVED) {
+                if (distanceInY > minDistanceMoved) {
                     flingY.setStartVelocity(velocityY)
                         .start()
                 }
@@ -290,15 +290,13 @@ class SpanGridView(
     private val mGestureDetector = GestureDetector(context, mGestureListener)
 
     fun init() {
-        maxTranslationX = width.toFloat() / 2
-        maxTranslationY = height.toFloat() / 2
-
         setGridSize()
     }
 
-    fun clearData(){
-        points.clear()
+    fun clearData() {
+        pointsOnScreen.clear()
         historyQuad = createQuadTree()
+        postInvalidate()
     }
 
     /***
@@ -401,7 +399,7 @@ class SpanGridView(
 
     fun removeRect(px: Point) {
         historyQuad.remove(px)
-        points.remove(px)
+        pointsOnScreen.remove(px)
         invalidate()
     }
 
@@ -417,7 +415,7 @@ class SpanGridView(
         val h = (gridHeight / 2) + 2
         val x = w - xOff - 1
         val y = h - yOff - 1
-        points.clear()
+        pointsOnScreen.clear()
         historyQuad.pull(
             RectangleCentered(
                 x = x,
@@ -437,7 +435,7 @@ class SpanGridView(
         val fill = px.fill
         val stroke = px.stroke
 
-        points[Point(x = px.x, y = px.y)] =
+        pointsOnScreen[Point(x = px.x, y = px.y)] =
             Node(
                 x = px.x,
                 y = px.y,
@@ -497,7 +495,7 @@ class SpanGridView(
     }
 
     private fun Canvas.drawGridPoints() {
-        points.forEach { data ->
+        pointsOnScreen.forEach { data ->
             val px = data.value
             if (px.stroke == px.fill) {
                 paint.color = px.fill
@@ -540,18 +538,6 @@ class SpanGridView(
                     paint
                 )
             }
-
-            /*if (resolution >= 50f) {
-                val text = px.text
-                paint.textSize = _textSize
-                paint.color = Color.WHITE
-                paint.textAlign = Paint.Align.CENTER
-
-                val xPos: Float = px.x1 + ((px.x2 - px.x1) / 2)
-                val yPos = px.y1 + (((px.y2 - px.y1) / 2 - (paint.descent() + paint.ascent()) / 2))
-
-                drawText(text, xPos, yPos, paint)
-            }*/
 
         }
     }

@@ -13,8 +13,8 @@
         android:id="@+id/gridViewHolder"
         android:layout_marginBottom="56dp"
         app:lineColor="@color/line_color"
-        app:scale=".3"
-        app:lineWidth="1"
+        app:scale=".2"
+        app:lineWidth=".5"
         android:layout_weight="1"
         app:gridColor="@color/empty" />
 

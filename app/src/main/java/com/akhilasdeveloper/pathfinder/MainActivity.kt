@@ -2,6 +2,7 @@ package com.akhilasdeveloper.pathfinder
 
 import android.os.Bundle
 import android.view.Menu
+import android.view.View
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
@@ -108,13 +109,13 @@ class MainActivity : AppCompatActivity(), NodeListClickListener {
         }
 
         binding.bottomAppBar.setNavigationOnClickListener {
-            bottomSheetSettingsBehavior.state = BottomSheetBehavior.STATE_EXPANDED
+            bottomSheetSettingsBehavior.toggleSheet()
         }
 
         binding.bottomAppBar.setOnMenuItemClickListener { menuItem ->
             when (menuItem.itemId) {
                 R.id.draw -> {
-                    bottomSheetBehavior.state = BottomSheetBehavior.STATE_EXPANDED
+                    bottomSheetBehavior.toggleSheet()
                     true
                 }
                 R.id.clear -> {
@@ -130,12 +131,7 @@ class MainActivity : AppCompatActivity(), NodeListClickListener {
                     true
                 }
                 R.id.info -> {
-                    if (bottomSheetMessagedBehavior.state == BottomSheetBehavior.STATE_EXPANDED) {
-                        bottomSheetMessagedBehavior.state = BottomSheetBehavior.STATE_HIDDEN
-                    } else {
-                        bottomSheetMessagedBehavior.state = BottomSheetBehavior.STATE_EXPANDED
-                    }
-
+                        bottomSheetMessagedBehavior.toggleSheet()
                     true
                 }
                 R.id.grid -> {
@@ -146,6 +142,7 @@ class MainActivity : AppCompatActivity(), NodeListClickListener {
                         .setItems(items) { _, which ->
                             when (which) {
                                 0 -> {
+                                    gridCanvasView.drawEnabled = true
                                     generateRecursiveMaze()
                                 }
                             }
@@ -478,11 +475,15 @@ class MainActivity : AppCompatActivity(), NodeListClickListener {
 
     override fun onItemClicked(cellItem: CellItem) {
         selectedNode = cellItem.cell.type
-        bottomSheetBehavior.state = BottomSheetBehavior.STATE_HIDDEN
+        bottomSheetBehavior.toggleSheet()
         gridCanvasView.drawEnabled = true
-        if (executionCompleted)
-            reset()
-        clearGridHashBackup()
     }
 
+}
+
+private fun <V : View?> BottomSheetBehavior<V>.toggleSheet() {
+    state = if (state == BottomSheetBehavior.STATE_EXPANDED)
+        BottomSheetBehavior.STATE_HIDDEN
+    else
+        BottomSheetBehavior.STATE_EXPANDED
 }

@@ -1,36 +1,39 @@
-package com.akhilasdeveloper.pathfinder
+package com.akhilasdeveloper.pathfinder.views
 
 import android.os.Bundle
 import android.view.Menu
 import android.view.View
 import android.widget.LinearLayout
-import android.widget.ScrollView
-import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.core.content.res.ResourcesCompat
 import androidx.core.widget.NestedScrollView
 import androidx.recyclerview.widget.GridLayoutManager
+import com.akhilasdeveloper.pathfinder.R
 import com.akhilasdeveloper.pathfinder.algorithms.NodeListClickListener
 import com.akhilasdeveloper.pathfinder.algorithms.ShareRecyclerAdapter
 import com.akhilasdeveloper.pathfinder.algorithms.pathfinding.*
+import com.akhilasdeveloper.pathfinder.algorithms.pathfinding.FindPath.Companion.ASTAR
+import com.akhilasdeveloper.pathfinder.algorithms.pathfinding.FindPath.Companion.BFS
+import com.akhilasdeveloper.pathfinder.algorithms.pathfinding.FindPath.Companion.DFS
+import com.akhilasdeveloper.pathfinder.algorithms.pathfinding.FindPath.Companion.DIJKSTRA
 import com.akhilasdeveloper.pathfinder.algorithms.pathfinding.generateRecursiveMaze
-import com.akhilasdeveloper.pathfinder.algorithms.pathfinding.getData
 import com.akhilasdeveloper.pathfinder.databinding.ActivityMainBinding
 import com.akhilasdeveloper.pathfinder.models.CellItem
 import com.akhilasdeveloper.pathfinder.models.Square
 import com.akhilasdeveloper.pathfinder.models.nodes
-import com.akhilasdeveloper.pathfinder.views.Keys
-import com.akhilasdeveloper.pathfinder.views.Keys.END
-import com.akhilasdeveloper.pathfinder.views.Keys.START
+import com.akhilasdeveloper.pathfinder.models.Keys
+import com.akhilasdeveloper.pathfinder.models.Keys.END
+import com.akhilasdeveloper.pathfinder.models.Keys.START
 import com.akhilasdeveloper.spangridview.SpanGridView
 import com.akhilasdeveloper.spangridview.models.Point
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.*
 
-
+@AndroidEntryPoint
 class MainActivity : AppCompatActivity(), NodeListClickListener {
 
     private var _binding: ActivityMainBinding? = null
@@ -39,19 +42,7 @@ class MainActivity : AppCompatActivity(), NodeListClickListener {
     private lateinit var bottomSheetSettingsBehavior: BottomSheetBehavior<LinearLayout>
     private lateinit var bottomSheetMessagedBehavior: BottomSheetBehavior<NestedScrollView>
     internal lateinit var gridCanvasView: SpanGridView
-    internal var startPont: Point? = null
-    internal var endPont: Point? = null
-    internal var gridHash: HashMap<Point, Square> = hashMapOf()
-    private var gridHashBackup: HashMap<Point, Square> = hashMapOf()
-    private var xHash: HashMap<Int, Int> = hashMapOf()
-    private var yHash: HashMap<Int, Int> = hashMapOf()
-    internal var sleepVal = 0L
-    internal var sleepValPath = 0L
-    private var totalDelayMillis = 0L
-    private var startedTimeInMillis = 0L
-    internal var visitedNodesCount = 0
-    internal var pathNodesCount = 0
-    internal var executionCompleted = false
+    internal var findPath: FindPath = FindPath()
 
     private lateinit var shareListAdapter: ShareRecyclerAdapter
 
@@ -92,9 +83,9 @@ class MainActivity : AppCompatActivity(), NodeListClickListener {
                     menuItem.icon = ResourcesCompat.getDrawable(
                         resources,
                         if (mode == gridCanvasView.MODE_DRAW) {
-                            if (executionCompleted)
+                            /*if (findPath.executionCompleted)
                                 reset()
-                            clearGridHashBackup()
+                            clearGridHashBackup()*/
                             R.drawable.ic_eye
                         } else {
                             R.drawable.ic_eye_off
@@ -102,6 +93,39 @@ class MainActivity : AppCompatActivity(), NodeListClickListener {
                     )
                 }
             }
+        })
+
+        findPath.setPathFindListener(object :FindPath.OnPathFindListener{
+            override fun onPathNotFound(type: String) {
+                setMessage("$type: Path Not Fount")
+                gridCanvasView.drawEnabled = false
+            }
+
+            override fun onPathFound(type: String, summary: FindPath.PathSummary) {
+                val message =
+                    "$title: Completed in ${summary.timeMillis}ms ${if (summary.totalDelayMillis > 0) "(excluding animation delay(${summary.totalDelayMillis}))" else ""}.\nVisited: ${summary.visitedNodesCount} Nodes\nPath Length: ${summary.pathNodesCount}"
+                setMessage(message)
+                gridCanvasView.drawEnabled = false
+            }
+
+            override fun drawPoint(px: Point, color1: Int, color2: Int) {
+                this@MainActivity.drawPoint(px, color1, color2)
+            }
+
+            override fun clearPoint(px: Point) {
+                clearBit(px)
+            }
+
+            override fun onReset(gridHash: Map<Point, Square>) {
+                repopulateGrid(gridHash)
+            }
+
+            override fun onResetAll() {
+                gridCanvasView.clearData()
+                gridCanvasView.postInvalidate()
+                gaps.clear()
+            }
+
         })
 
         binding.gridEnabled.setOnClickListener {
@@ -119,11 +143,11 @@ class MainActivity : AppCompatActivity(), NodeListClickListener {
                     true
                 }
                 R.id.clear -> {
-                    reset()
+                    findPath.reset()
                     true
                 }
                 R.id.clearAll -> {
-                    resetAll()
+                    findPath.resetAll()
                     true
                 }
                 R.id.viewMode -> {
@@ -157,8 +181,8 @@ class MainActivity : AppCompatActivity(), NodeListClickListener {
                     MaterialAlertDialogBuilder(this)
                         .setTitle("Select Path Algorithm")
                         .setItems(items) { _, which ->
-                            if (startPont != null && endPont != null)
-                                findPath(items[which])
+                            if (findPath.startPont != null && findPath.endPont != null)
+                                findPath.findPath(items[which])
                             else
                                 Toast.makeText(
                                     this,
@@ -179,8 +203,8 @@ class MainActivity : AppCompatActivity(), NodeListClickListener {
         }
 
         binding.speedSlide.addOnChangeListener { _, value, _ ->
-            sleepVal = value.toLong()
-            sleepValPath = value.toLong()
+            findPath.sleepVal = value.toLong()
+            findPath.sleepValPath = value.toLong()
         }
 
     }
@@ -190,32 +214,32 @@ class MainActivity : AppCompatActivity(), NodeListClickListener {
         when (selectedNode) {
 
             Keys.START -> {
-                startPont?.let { start ->
-                    clearBit(start)
+                findPath.startPont?.let { start ->
+                    findPath.removeData(start)
                 }
-                startPont = px
-                setBit(px, selectedNode)
+                findPath.startPont = px
+                findPath.addData(px, selectedNode)
 
             }
             Keys.END -> {
 
-                endPont?.let { start ->
-                    clearBit(start)
+                findPath.endPont?.let { start ->
+                    findPath.removeData(start)
                 }
 
-                endPont = px
-                setBit(px, selectedNode)
+                findPath.endPont = px
+                findPath.addData(px, selectedNode)
 
             }
             Keys.AIR -> {
-                clearBit(px)
-                if (px == startPont)
-                    startPont = null
-                if (px == endPont)
-                    endPont = null
+                findPath.removeData(px)
+                if (px == findPath.startPont)
+                    findPath.startPont = null
+                if (px == findPath.endPont)
+                    findPath.endPont = null
             }
             else -> {
-                setBit(px, selectedNode)
+                findPath.addData(px, selectedNode)
             }
 
         }
@@ -241,7 +265,7 @@ class MainActivity : AppCompatActivity(), NodeListClickListener {
         shareListAdapter.submitList(cellList)
         setSelection()
 
-        binding.speedSlide.value = sleepVal.toFloat()
+        binding.speedSlide.value = findPath.sleepVal.toFloat()
     }
 
 
@@ -283,68 +307,10 @@ class MainActivity : AppCompatActivity(), NodeListClickListener {
     }
 
 
-    internal fun setPathMessage(title: String) {
-        val time = (System.currentTimeMillis() - startedTimeInMillis) - totalDelayMillis
-        val message =
-            "$title: Completed in ${time}ms ${if (totalDelayMillis > 0) "(excluding animation delay($totalDelayMillis))" else ""}.\nVisited: $visitedNodesCount Nodes\nPath Length: $pathNodesCount"
-        setMessage(message)
-    }
-
-    private fun resetVars(){
-        startedTimeInMillis = System.currentTimeMillis()
-        visitedNodesCount = 0
-        pathNodesCount = 0
-        totalDelayMillis = 0
-        executionCompleted = false
-    }
-
-    private fun resetAll(){
-        resetVars()
-        gridHashBackup.clear()
-        gridHash.clear()
-        heapMin.clear()
-        gridCanvasView.clearData()
-        gridCanvasView.postInvalidate()
-        xHash.clear()
-        yHash.clear()
-        gaps.clear()
-        startPont = null
-        endPont = null
-    }
-
-    internal fun reset() {
-        resetVars()
-        if (gridHashBackup.isEmpty()) {
-            createBorder()
-            copyGridHash()
-        } else {
-            gridHash.clear()
-            heapMin.clear()
-            restoreGridHash()
-        }
-        repopulateGrid()
-    }
-
-    private fun clearGridHashBackup(){
-        gridHashBackup.clear()
-    }
-
-    private fun restoreGridHash() {
-        for (data in gridHashBackup) {
-            gridHash[data.key] = nodes(type = data.value.type)
-        }
-    }
-
-    private fun copyGridHash() {
-        for (data in gridHash) {
-            gridHashBackup[data.key] = nodes(type = data.value.type)
-        }
-    }
-
-    private fun repopulateGrid() {
+    private fun repopulateGrid(gridHash: Map<Point, Square>) {
         gridCanvasView.clearData()
         for (data in gridHash) {
-            setBit(data.key, data.value.type)
+            findPath.addData(data.key, data.value.type)
         }
     }
 
@@ -370,108 +336,35 @@ class MainActivity : AppCompatActivity(), NodeListClickListener {
     internal fun drawLineHor(x1: Int, x2: Int, y: Int) {
         for (i in x1..x2) {
             runBlocking {
-                delay(sleepVal)
+                delay(findPath.sleepVal)
             }
-            setBit(Point(i, y), Keys.WALL)
+            findPath.addData(Point(i, y), Keys.WALL)
         }
     }
 
     internal fun drawLineVer(y1: Int, y2: Int, x: Int) {
         for (i in y1..y2) {
             runBlocking {
-                delay(sleepVal)
+                delay(findPath.sleepVal)
             }
-            setBit(Point(x, i), Keys.WALL)
+            findPath.addData(Point(x, i), Keys.WALL)
         }
     }
 
-    internal fun setBit(point: Point, type: Int) {
-
-        totalDelayMillis += sleepVal
-
-        setXY(point)
-
-        val data = getData(point).copyToType(type = type)
-        gridHash[point] = data
+    private fun drawPoint(point: Point, color1: Int, color2: Int) {
 
         gridCanvasView.plotPoint(
             point,
-            ContextCompat.getColor(this, data.fillColor),
-            ContextCompat.getColor(this, data.color)
+            ContextCompat.getColor(this, color2),
+            ContextCompat.getColor(this, color1)
         )
     }
 
     internal fun clearBit(point: Point) {
-        clearXY(point)
-        gridHash.remove(point)
         gridCanvasView.removeRect(point)
     }
 
-    private fun setXY(point: Point) {
-        if (gridHash[point] == null) {
-            val x = xHash[point.x] ?: 0
-            val y = yHash[point.y] ?: 0
-            xHash[point.x] = x + 1
-            yHash[point.y] = y + 1
-        }
-    }
 
-    private fun clearXY(point: Point) {
-        gridHash[point]?.let {
-            xHash[point.x]?.let {
-                if (it <= 1)
-                    xHash.remove(point.x)
-                else
-                    xHash[point.x] = it - 1
-            }
-            yHash[point.y]?.let {
-                if (it <= 1)
-                    yHash.remove(point.y)
-                else
-                    yHash[point.y] = it - 1
-            }
-        }
-    }
-
-    private fun getMinXY(): Point {
-        xHash.keys.toIntArray().minOrNull()?.let { x ->
-            yHash.keys.toIntArray().minOrNull()?.let { y ->
-                return Point(x, y)
-            }
-        }
-
-        return Point(0, 0)
-    }
-
-    private fun getMaxXY(): Point {
-        xHash.keys.toIntArray().maxOrNull()?.let { x ->
-            yHash.keys.toIntArray().maxOrNull()?.let { y ->
-                return Point(x, y)
-            }
-        }
-
-        return Point(0, 0)
-    }
-
-    private fun createBorder() {
-        var minPoint = getMinXY()
-        var maxPoint = getMaxXY()
-
-        minPoint = minPoint.apply {
-            x -= 1
-            y -= 1
-        }
-
-        maxPoint = maxPoint.apply {
-            x += 1
-            y += 1
-        }
-
-        val width = maxPoint.x - minPoint.x
-        val height = maxPoint.y - minPoint.y
-
-        generateBorder(minPoint, width, height)
-    }
 
     override fun onItemClicked(cellItem: CellItem) {
         selectedNode = cellItem.cell.type

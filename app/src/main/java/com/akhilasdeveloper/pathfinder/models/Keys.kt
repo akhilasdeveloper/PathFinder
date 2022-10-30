@@ -1,4 +1,4 @@
-package com.akhilasdeveloper.pathfinder.views
+package com.akhilasdeveloper.pathfinder.models
 
 import com.akhilasdeveloper.pathfinder.R
 

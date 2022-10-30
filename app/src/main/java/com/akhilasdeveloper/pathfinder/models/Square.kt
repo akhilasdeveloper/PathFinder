@@ -3,7 +3,6 @@ package com.akhilasdeveloper.pathfinder.models
 import android.content.Context
 import androidx.core.content.ContextCompat
 import com.akhilasdeveloper.pathfinder.R
-import com.akhilasdeveloper.pathfinder.views.Keys
 import com.akhilasdeveloper.spangridview.models.Point
 
 data class Square(

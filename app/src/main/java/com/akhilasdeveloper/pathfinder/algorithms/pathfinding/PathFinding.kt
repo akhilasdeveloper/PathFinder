@@ -1,19 +1,19 @@
 package com.akhilasdeveloper.pathfinder.algorithms.pathfinding
 
-import com.akhilasdeveloper.pathfinder.MainActivity
 import com.akhilasdeveloper.pathfinder.algorithms.HeapMinHash
+import com.akhilasdeveloper.pathfinder.models.Keys
 import com.akhilasdeveloper.pathfinder.models.nodes
-import com.akhilasdeveloper.pathfinder.views.Keys
+import com.akhilasdeveloper.pathfinder.views.MainActivity
 import com.akhilasdeveloper.spangridview.models.Point
 import kotlinx.coroutines.*
 import kotlin.math.abs
 
+/*
 const val DIJKSTRA = "Dijkstra"
 const val ASTAR = "A*"
 const val BFS = "BFS"
 const val DFS = "DFS"
 
-internal var heapMin: HeapMinHash<Point> = HeapMinHash()
 
 internal fun MainActivity.findPath(type: String) {
 
@@ -24,19 +24,25 @@ internal fun MainActivity.findPath(type: String) {
         val startP = startPont!!
         val endP = endPont!!
 
-        /** set start node distance as 0 and push to heap*/
+        */
+/** set start node distance as 0 and push to heap*//*
+
         gridHash[startP]?.distance = 0
         heapMin.push(startP, gridHash)
 
         while (true) {
 
-            /** animation delay*/
+            */
+/** animation delay*//*
+
             delay(sleepValPath)
 
-            /**
+            */
+/**
              * fetch short node from heap
              * if the heap returns null (heap is empty) the exit the loop. All nodes are visited and destination is not reachable
-             */
+             *//*
+
             val node = heapMin.pull(gridHash)
             if (node == null){
                 withContext(Dispatchers.Main){
@@ -48,11 +54,13 @@ internal fun MainActivity.findPath(type: String) {
             }
             val shortNode: Point = node
 
-            /**
+            */
+/**
              * if short node == end node, then the destination is reached.
              * Now the shortest path will be drawn by traversing backward using previous value of the node
              * else set node as visited
-             */
+             *//*
+
             if (shortNode == endP) {
                 var n: Point = shortNode
                 while (n != startP) {
@@ -82,15 +90,19 @@ internal fun MainActivity.findPath(type: String) {
                 }
             }
 
-            /**
+            */
+/**
              * Fetch all neighbours(top, left, bottom, right) of short node
-             */
+             *//*
+
             val neighbours: Array<Point> = getNeighbours(shortNode)
 
-            /**
+            */
+/**
              * checking all the neighbours and comparing the distance with short distance + 1
              * if the distance is greater, then assign short distance + 1 to neighbours
-             */
+             *//*
+
             neighbours.forEach {
                 when(type){
                     DIJKSTRA->{
@@ -169,3 +181,4 @@ internal fun MainActivity.getNeighbours(
 internal fun MainActivity.getData(index: Point) = gridHash.getOrPut(index) { nodes() }
 
 internal fun heuristic(nei: Point, endP: Point): Int = abs(nei.x - endP.x) + abs(nei.y - endP.y)
+*/

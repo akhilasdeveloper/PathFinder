@@ -1,7 +1,7 @@
 package com.akhilasdeveloper.pathfinder.algorithms.pathfinding
 
-import com.akhilasdeveloper.pathfinder.MainActivity
-import com.akhilasdeveloper.pathfinder.views.Keys
+import com.akhilasdeveloper.pathfinder.models.Keys
+import com.akhilasdeveloper.pathfinder.views.MainActivity
 import com.akhilasdeveloper.spangridview.models.Point
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -20,7 +20,7 @@ internal fun MainActivity.generateRecursiveMaze() {
         gHeight = if (gHeight % 2 == 0) gHeight else gHeight - 1
         gWidth = if (gWidth % 2 == 0) gWidth else gWidth - 1
 
-        generateBorder(startPoint, gWidth, gHeight)
+        findPath.generateBorder(startPoint, gWidth, gHeight)
         recursiveMaze(
             startPoint.x + 1,
             startPoint.y + 1,
@@ -28,21 +28,6 @@ internal fun MainActivity.generateRecursiveMaze() {
             gHeight + startPoint.y - 1
         )
 
-    }
-}
-
-internal fun MainActivity.generateBorder(startPoint: Point, gWidth: Int, gHeight: Int) {
-
-    val xEnd = gWidth + startPoint.x
-    val yEnd = gHeight + startPoint.y
-
-    for (i in startPoint.x until xEnd) {
-        setBit(Point(i, startPoint.y), Keys.WALL)
-        setBit(Point(i, yEnd), Keys.WALL)
-    }
-    for (j in startPoint.y until yEnd + 1) {
-        setBit(Point(startPoint.x, j), Keys.WALL)
-        setBit(Point(xEnd, j), Keys.WALL)
     }
 }
 

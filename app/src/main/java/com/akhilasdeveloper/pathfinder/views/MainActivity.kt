@@ -17,7 +17,6 @@ import com.akhilasdeveloper.pathfinder.algorithms.pathfinding.*
 import com.akhilasdeveloper.pathfinder.algorithms.pathfinding.FindPath.Companion.AIR
 import com.akhilasdeveloper.pathfinder.algorithms.pathfinding.FindPath.Companion.ASTAR
 import com.akhilasdeveloper.pathfinder.algorithms.pathfinding.FindPath.Companion.BFS
-import com.akhilasdeveloper.pathfinder.algorithms.pathfinding.FindPath.Companion.DFS
 import com.akhilasdeveloper.pathfinder.algorithms.pathfinding.FindPath.Companion.DIJKSTRA
 import com.akhilasdeveloper.pathfinder.algorithms.pathfinding.FindPath.Companion.END
 import com.akhilasdeveloper.pathfinder.algorithms.pathfinding.FindPath.Companion.START
@@ -32,7 +31,6 @@ import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import dagger.hilt.android.AndroidEntryPoint
 
-@AndroidEntryPoint
 class MainActivity : AppCompatActivity(), NodeListClickListener {
 
     private var _binding: ActivityMainBinding? = null
@@ -93,7 +91,7 @@ class MainActivity : AppCompatActivity(), NodeListClickListener {
             }
         })
 
-        generateMaze.setMazeGenerateListener(object :GenerateMaze.OnMazeGenerateListener{
+        generateMaze.setMazeGenerateListener(object : GenerateMaze.OnMazeGenerateListener {
             override fun addData(px: Point) {
                 findPath.addData(px, WALL)
             }
@@ -104,14 +102,22 @@ class MainActivity : AppCompatActivity(), NodeListClickListener {
 
         })
 
-        findPath.setPathFindListener(object :FindPath.OnPathFindListener{
+        findPath.setPathFindListener(object : FindPath.OnPathFindListener {
             override fun onPathNotFound(type: String) {
                 setMessage("$type: Path Not Fount")
                 gridCanvasView.drawEnabled = false
             }
 
             override fun onError(message: String) {
-                Toast.makeText(this@MainActivity,message,Toast.LENGTH_LONG).show()
+                Toast.makeText(this@MainActivity, message, Toast.LENGTH_LONG).show()
+            }
+
+            override fun onPaused(summary: FindPath.PathSummary) {
+
+            }
+
+            override fun onResume() {
+
             }
 
             override fun onPathFound(type: String, summary: FindPath.PathSummary) {
@@ -166,7 +172,7 @@ class MainActivity : AppCompatActivity(), NodeListClickListener {
                     true
                 }
                 R.id.info -> {
-                        bottomSheetMessagedBehavior.toggleSheet()
+                    bottomSheetMessagedBehavior.toggleSheet()
                     true
                 }
                 R.id.grid -> {
@@ -177,12 +183,14 @@ class MainActivity : AppCompatActivity(), NodeListClickListener {
                         .setItems(items) { _, which ->
                             when (which) {
                                 0 -> {
-                                    if (gridCanvasView.pointsOnScreen.isNotEmpty()){
-                                        showAlert("Points exist on current screen. Do you want to continue?", onOk = {
-                                            gridCanvasView.drawEnabled = true
-                                            generateRecursiveMaze()
-                                        })
-                                    }else{
+                                    if (gridCanvasView.pointsOnScreen.isNotEmpty()) {
+                                        showAlert(
+                                            "Points exist on current screen. Do you want to continue?",
+                                            onOk = {
+                                                gridCanvasView.drawEnabled = true
+                                                generateRecursiveMaze()
+                                            })
+                                    } else {
                                         gridCanvasView.drawEnabled = true
                                         generateRecursiveMaze()
                                     }
@@ -194,13 +202,12 @@ class MainActivity : AppCompatActivity(), NodeListClickListener {
                 }
                 R.id.play -> {
 
-                    val items = arrayOf(DIJKSTRA, ASTAR, BFS, DFS)
+                    val items = arrayOf(DIJKSTRA, ASTAR, BFS)
 
                     MaterialAlertDialogBuilder(this)
                         .setTitle("Select Path Algorithm")
                         .setItems(items) { _, which ->
-                                findPath.findPath(items[which])
-
+                            findPath.findPath(items[which])
                         }
                         .show()
 
@@ -355,7 +362,6 @@ class MainActivity : AppCompatActivity(), NodeListClickListener {
     }
 
 
-
     private fun drawPoint(point: Point, color1: Int, color2: Int) {
 
         gridCanvasView.plotPoint(
@@ -370,16 +376,21 @@ class MainActivity : AppCompatActivity(), NodeListClickListener {
     }
 
 
-
     override fun onItemClicked(cellItem: CellItem) {
         selectedNode = cellItem.cell.type
         bottomSheetBehavior.toggleSheet()
         gridCanvasView.drawEnabled = true
     }
 
-    private fun showAlert(message: String, onOk: (()->Unit)? =  null, onCancel: (()->Unit)? = null ){
-        MaterialAlertDialogBuilder(this,
-            R.style.ThemeOverlay_MaterialComponents_Dialog_Alert)
+    private fun showAlert(
+        message: String,
+        onOk: (() -> Unit)? = null,
+        onCancel: (() -> Unit)? = null
+    ) {
+        MaterialAlertDialogBuilder(
+            this,
+            R.style.ThemeOverlay_MaterialComponents_Dialog_Alert
+        )
             .setMessage(message)
             .setNegativeButton("No") { dialog, _ ->
                 onCancel?.invoke()

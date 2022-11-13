@@ -14,13 +14,13 @@ import com.akhilasdeveloper.pathfinder.R
 import com.akhilasdeveloper.pathfinder.algorithms.NodeListClickListener
 import com.akhilasdeveloper.pathfinder.algorithms.ShareRecyclerAdapter
 import com.akhilasdeveloper.pathfinder.algorithms.pathfinding.*
-import com.akhilasdeveloper.pathfinder.algorithms.pathfinding.FindPath.Companion.AIR
-import com.akhilasdeveloper.pathfinder.algorithms.pathfinding.FindPath.Companion.ASTAR
-import com.akhilasdeveloper.pathfinder.algorithms.pathfinding.FindPath.Companion.BFS
-import com.akhilasdeveloper.pathfinder.algorithms.pathfinding.FindPath.Companion.DIJKSTRA
-import com.akhilasdeveloper.pathfinder.algorithms.pathfinding.FindPath.Companion.END
-import com.akhilasdeveloper.pathfinder.algorithms.pathfinding.FindPath.Companion.START
-import com.akhilasdeveloper.pathfinder.algorithms.pathfinding.FindPath.Companion.WALL
+import com.akhilasdeveloper.pathfinder.algorithms.pathfinding.FindPath.Companion.AIR_NODE
+import com.akhilasdeveloper.pathfinder.algorithms.pathfinding.FindPath.Companion.ASTAR_ALGORITHM
+import com.akhilasdeveloper.pathfinder.algorithms.pathfinding.FindPath.Companion.BFS_ALGORITHM
+import com.akhilasdeveloper.pathfinder.algorithms.pathfinding.FindPath.Companion.DIJKSTRA_ALGORITHM
+import com.akhilasdeveloper.pathfinder.algorithms.pathfinding.FindPath.Companion.END_NODE
+import com.akhilasdeveloper.pathfinder.algorithms.pathfinding.FindPath.Companion.START_NODE
+import com.akhilasdeveloper.pathfinder.algorithms.pathfinding.FindPath.Companion.WALL_NODE
 import com.akhilasdeveloper.pathfinder.algorithms.pathfinding.FindPath.Companion.nodes
 import com.akhilasdeveloper.pathfinder.databinding.ActivityMainBinding
 import com.akhilasdeveloper.pathfinder.models.CellItem
@@ -29,22 +29,23 @@ import com.akhilasdeveloper.spangridview.SpanGridView.Companion.MODE_DRAW
 import com.akhilasdeveloper.spangridview.models.Point
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
-import dagger.hilt.android.AndroidEntryPoint
 
 class MainActivity : AppCompatActivity(), NodeListClickListener {
 
     private var _binding: ActivityMainBinding? = null
     private val binding get() = _binding!!
+
     private lateinit var bottomSheetBehavior: BottomSheetBehavior<LinearLayout>
     private lateinit var bottomSheetSettingsBehavior: BottomSheetBehavior<LinearLayout>
     private lateinit var bottomSheetMessagedBehavior: BottomSheetBehavior<NestedScrollView>
+
     internal lateinit var gridCanvasView: SpanGridView
     private var findPath: FindPath = FindPath()
     private var generateMaze: GenerateMaze = GenerateMaze()
 
     private lateinit var shareListAdapter: ShareRecyclerAdapter
 
-    private var selectedNode = START
+    private var selectedNode = START_NODE
         set(value) {
             clearSelection(field)
             field = value
@@ -93,7 +94,7 @@ class MainActivity : AppCompatActivity(), NodeListClickListener {
 
         generateMaze.setMazeGenerateListener(object : GenerateMaze.OnMazeGenerateListener {
             override fun addData(px: Point) {
-                findPath.addData(px, WALL)
+                findPath.addData(px, WALL_NODE)
             }
 
             override fun removeData(px: Point) {
@@ -112,34 +113,26 @@ class MainActivity : AppCompatActivity(), NodeListClickListener {
                 Toast.makeText(this@MainActivity, message, Toast.LENGTH_LONG).show()
             }
 
-            override fun onPaused(summary: FindPath.PathSummary) {
-
-            }
-
-            override fun onResume() {
-
-            }
-
             override fun onPathFound(type: String, summary: FindPath.PathSummary) {
                 val message =
-                    "$type: Completed in ${summary.timeMillis}ms ${if (summary.totalDelayMillis > 0) "(excluding animation delay(${summary.totalDelayMillis}))" else ""}.\nVisited: ${summary.visitedNodesCount} Nodes\nPath Length: ${summary.pathNodesCount}"
+                    "$type: Completed in ${summary.completedTimeMillis}ms ${if (summary.totalDelayMillis > 0) "(excluding animation delay(${summary.totalDelayMillis}))" else ""}.\nVisited: ${summary.visitedNodesCount} Nodes\nPath Length: ${summary.pathNodesCount}"
                 setMessage(message)
                 gridCanvasView.drawEnabled = false
             }
 
-            override fun drawPoint(px: Point, color1: Int, color2: Int) {
+            override fun onDrawPoint(px: Point, color1: Int, color2: Int) {
                 this@MainActivity.drawPoint(px, color1, color2)
             }
 
-            override fun clearPoint(px: Point) {
+            override fun onClearPoint(px: Point) {
                 clearBit(px)
             }
 
-            override fun onReset(gridHash: Map<Point, FindPath.Square>) {
+            override fun onClearResult(gridHash: Map<Point, FindPath.Square>) {
                 repopulateGrid(gridHash)
             }
 
-            override fun onResetAll() {
+            override fun onClearAll() {
                 gridCanvasView.clearData()
             }
 
@@ -202,7 +195,7 @@ class MainActivity : AppCompatActivity(), NodeListClickListener {
                 }
                 R.id.play -> {
 
-                    val items = arrayOf(DIJKSTRA, ASTAR, BFS)
+                    val items = arrayOf(DIJKSTRA_ALGORITHM, ASTAR_ALGORITHM, BFS_ALGORITHM)
 
                     MaterialAlertDialogBuilder(this)
                         .setTitle("Select Path Algorithm")
@@ -241,7 +234,7 @@ class MainActivity : AppCompatActivity(), NodeListClickListener {
 
         when (selectedNode) {
 
-            START -> {
+            START_NODE -> {
                 findPath.startPont?.let { start ->
                     findPath.removeData(start)
                 }
@@ -249,7 +242,7 @@ class MainActivity : AppCompatActivity(), NodeListClickListener {
                 findPath.addData(px, selectedNode)
 
             }
-            END -> {
+            END_NODE -> {
 
                 findPath.endPont?.let { start ->
                     findPath.removeData(start)
@@ -259,7 +252,7 @@ class MainActivity : AppCompatActivity(), NodeListClickListener {
                 findPath.addData(px, selectedNode)
 
             }
-            AIR -> {
+            AIR_NODE -> {
                 findPath.removeData(px)
                 if (px == findPath.startPont)
                     findPath.startPont = null
@@ -355,7 +348,7 @@ class MainActivity : AppCompatActivity(), NodeListClickListener {
     }
 
     private fun setBrushSize() {
-        if (selectedNode == START || selectedNode == END)
+        if (selectedNode == START_NODE || selectedNode == END_NODE)
             gridCanvasView.brushSize = 1
         else
             gridCanvasView.brushSize = brushSize

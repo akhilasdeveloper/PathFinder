@@ -5,36 +5,43 @@
     <item android:title="View Mode"
         android:id="@+id/viewMode"
         android:icon="@drawable/ic_eye"
-        app:showAsAction="always|withText"/>
+        app:showAsAction="always|withText"
+        app:iconTint="@color/system_for"/>
 
     <item android:title="Info"
         android:id="@+id/info"
         android:icon="@drawable/ic_round_info_24"
-        app:showAsAction="always|withText"/>
+        app:showAsAction="always|withText"
+        app:iconTint="@color/system_for"/>
 
     <item android:title="Draw"
         android:id="@+id/draw"
         android:icon="@drawable/ic_baseline_edit_24"
-        app:showAsAction="always|withText"/>
+        app:showAsAction="always|withText"
+        app:iconTint="@color/system_for"/>
 
     <item android:title="Clear Path"
         android:id="@+id/clear"
         android:icon="@drawable/ic_round_clear_all_24"
-        app:showAsAction="ifRoom"/>
+        app:showAsAction="ifRoom"
+        app:iconTint="@color/system_for"/>
 
     <item android:title="Clear All"
         android:id="@+id/clearAll"
         android:icon="@drawable/ic_round_clear_all_24"
-        app:showAsAction="ifRoom"/>
+        app:showAsAction="ifRoom"
+        app:iconTint="@color/system_for"/>
 
     <item android:title="Generate Grid"
         android:id="@+id/grid"
         android:icon="@drawable/ic_baseline_grid_view_24"
-        app:showAsAction="ifRoom" />
+        app:showAsAction="ifRoom"
+        app:iconTint="@color/system_for"/>
 
     <item android:title="Play"
         android:id="@+id/play"
         android:icon="@drawable/ic_round_play_arrow_24"
-        app:showAsAction="always|withText"/>
+        app:showAsAction="always|withText"
+        app:iconTint="@color/system_for"/>
 
 </menu>

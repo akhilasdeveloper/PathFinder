@@ -1,28 +1,21 @@
 package com.akhilasdeveloper.pathfinder.algorithms.pathfinding
 
-import com.akhilasdeveloper.pathfinder.R
 import com.akhilasdeveloper.pathfinder.algorithms.pathfinding.FindPath.*
-import com.akhilasdeveloper.pathfinder.algorithms.pathfinding.FindPath.Companion.AIR
-import com.akhilasdeveloper.pathfinder.algorithms.pathfinding.FindPath.Companion.ASTAR
-import com.akhilasdeveloper.pathfinder.algorithms.pathfinding.FindPath.Companion.BFS
-import com.akhilasdeveloper.pathfinder.algorithms.pathfinding.FindPath.Companion.DIJKSTRA
-import com.akhilasdeveloper.pathfinder.algorithms.pathfinding.FindPath.Companion.END
-import com.akhilasdeveloper.pathfinder.algorithms.pathfinding.FindPath.Companion.GRANITE
-import com.akhilasdeveloper.pathfinder.algorithms.pathfinding.FindPath.Companion.GRASS
-import com.akhilasdeveloper.pathfinder.algorithms.pathfinding.FindPath.Companion.PATH
-import com.akhilasdeveloper.pathfinder.algorithms.pathfinding.FindPath.Companion.SAND
-import com.akhilasdeveloper.pathfinder.algorithms.pathfinding.FindPath.Companion.SNOW
-import com.akhilasdeveloper.pathfinder.algorithms.pathfinding.FindPath.Companion.START
-import com.akhilasdeveloper.pathfinder.algorithms.pathfinding.FindPath.Companion.STONE
-import com.akhilasdeveloper.pathfinder.algorithms.pathfinding.FindPath.Companion.VISITED
-import com.akhilasdeveloper.pathfinder.algorithms.pathfinding.FindPath.Companion.WALL
-import com.akhilasdeveloper.pathfinder.algorithms.pathfinding.FindPath.Companion.WATER
-import com.akhilasdeveloper.pathfinder.algorithms.pathfinding.FindPath.Companion.WATER_DEEP
+import com.akhilasdeveloper.pathfinder.algorithms.pathfinding.FindPath.Companion.AIR_NODE
+import com.akhilasdeveloper.pathfinder.algorithms.pathfinding.FindPath.Companion.END_NODE
+import com.akhilasdeveloper.pathfinder.algorithms.pathfinding.FindPath.Companion.GRANITE_NODE
+import com.akhilasdeveloper.pathfinder.algorithms.pathfinding.FindPath.Companion.GRASS_NODE
+import com.akhilasdeveloper.pathfinder.algorithms.pathfinding.FindPath.Companion.SAND_NODE
+import com.akhilasdeveloper.pathfinder.algorithms.pathfinding.FindPath.Companion.SNOW_NODE
+import com.akhilasdeveloper.pathfinder.algorithms.pathfinding.FindPath.Companion.START_NODE
+import com.akhilasdeveloper.pathfinder.algorithms.pathfinding.FindPath.Companion.STONE_NODE
+import com.akhilasdeveloper.pathfinder.algorithms.pathfinding.FindPath.Companion.VISITED_NODE
+import com.akhilasdeveloper.pathfinder.algorithms.pathfinding.FindPath.Companion.WATER_NODE
+import com.akhilasdeveloper.pathfinder.algorithms.pathfinding.FindPath.Companion.WATER_DEEP_NODE
 import com.akhilasdeveloper.pathfinder.algorithms.pathfinding.FindPath.Companion.nodes
 import com.akhilasdeveloper.spangridview.models.Point
 import kotlinx.coroutines.*
 import timber.log.Timber
-import kotlin.math.abs
 
 class FindPathAbstract {
 
@@ -34,7 +27,7 @@ class FindPathAbstract {
     private fun setGridHash(gridHash: Map<Point, Square>) {
         for (data in gridHash) {
             this.gridHash[data.key] =
-                nodes(type = if (data.value.type == START) END else if (data.value.type == END) START else data.value.type)
+                nodes(type = if (data.value.type == START_NODE) END_NODE else if (data.value.type == END_NODE) START_NODE else data.value.type)
         }
     }
 
@@ -74,8 +67,8 @@ class FindPathAbstract {
                     break
                 }
                 val nodeN = gridHash[shortNode]
-                if (nodeN?.type != START) {
-                    val data = getData(shortNode).copyToType(type = VISITED)
+                if (nodeN?.type != START_NODE) {
+                    val data = getData(shortNode).copyToType(type = VISITED_NODE)
                     gridHash[shortNode] = data
                 }
             }
@@ -115,15 +108,15 @@ class FindPathAbstract {
 
         points.forEach { p ->
             val data = getData(p)
-            if (data.type == END ||
-                data.type == AIR ||
-                data.type == GRANITE ||
-                data.type == GRASS ||
-                data.type == SAND ||
-                data.type == SNOW ||
-                data.type == STONE ||
-                data.type == WATER ||
-                data.type == WATER_DEEP
+            if (data.type == END_NODE ||
+                data.type == AIR_NODE ||
+                data.type == GRANITE_NODE ||
+                data.type == GRASS_NODE ||
+                data.type == SAND_NODE ||
+                data.type == SNOW_NODE ||
+                data.type == STONE_NODE ||
+                data.type == WATER_NODE ||
+                data.type == WATER_DEEP_NODE
             ) {
                 n.add(p)
             }

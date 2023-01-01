@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   width="512"
+   height="512"
+   viewBox="0 0 135.46666 135.46667"
+   version="1.1"
+   id="svg5"
+   inkscape:version="1.1.2 (b8e25be833, 2022-02-05)"
+   sodipodi:docname="Icon_512x512.svg"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <sodipodi:namedview
+     id="namedview7"
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1.0"
+     inkscape:pageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:document-units="mm"
+     showgrid="true"
+     units="px"
+     inkscape:zoom="0.74029882"
+     inkscape:cx="70.917309"
+     inkscape:cy="491.69334"
+     inkscape:window-width="1920"
+     inkscape:window-height="1017"
+     inkscape:window-x="-8"
+     inkscape:window-y="-8"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="g2074" />
+  <defs
+     id="defs2" />
+  <g
+     inkscape:label="Layer 1"
+     inkscape:groupmode="layer"
+     id="layer1">
+    <g
+       id="g2074"
+       transform="translate(1.0722022,-2.1444043)">
+      <rect
+         style="fill:#0c3547;fill-opacity:1;stroke-width:0.264583"
+         id="rect2436"
+         width="136.88448"
+         height="136.52708"
+         x="-1.4296029"
+         y="2.1444044" />
+      <rect
+         style="fill:#4e9f3d;stroke-width:0.966619"
+         id="rect1064"
+         width="19.332413"
+         height="19.332409"
+         x="18.409575"
+         y="21.695524"
+         ry="0" />
+      <rect
+         style="fill:#ff0000;stroke-width:0.966619"
+         id="rect1066"
+         width="19.332409"
+         height="19.332409"
+         x="95.739212"
+         y="99.025169" />
+      <path
+         id="rect1090"
+         style="fill:#ffffff;fill-opacity:1;stroke-width:3.65336"
+         d="M 146.69922 73.894531 L 146.69922 146.96094 L 365.90234 146.96094 L 365.90234 220.0293 L 73.632812 220.0293 L 73.632812 293.0957 L 73.632812 439.23047 L 146.69922 439.23047 L 365.90234 439.23047 L 365.90234 366.16406 L 146.69922 366.16406 L 146.69922 293.0957 L 438.96875 293.0957 L 438.96875 220.0293 L 438.96875 146.96094 L 438.96875 73.894531 L 146.69922 73.894531 z "
+         transform="matrix(0.26458333,0,0,0.26458333,-1.0722022,2.1444043)" />
+    </g>
+  </g>
+</svg>

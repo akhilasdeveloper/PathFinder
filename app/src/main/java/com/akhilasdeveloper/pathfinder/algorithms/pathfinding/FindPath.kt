@@ -185,7 +185,9 @@ class FindPath {
         CoroutineScope(Dispatchers.Default).launch {
 
             if (startPont == null || endPont == null) {
-                pathFindListener?.onError("Please select start point and end point")
+                withContext(Dispatchers.Main){
+                    pathFindListener?.onError("Please select start point and end point")
+                }
                 return@launch
             }
 

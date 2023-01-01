@@ -380,7 +380,7 @@ class SpanGridView(
         historyQuad.insert(pointNode)
         if (isPointInCurrentScreen(px)) {
             addToPoints(pointNode)
-            invalidate()
+            postInvalidate()
         }
     }
 
@@ -400,7 +400,7 @@ class SpanGridView(
     fun removeRect(px: Point) {
         historyQuad.remove(px)
         pointsOnScreen.remove(px)
-        invalidate()
+        postInvalidate()
     }
 
     private fun setGridSize() {
@@ -426,7 +426,7 @@ class SpanGridView(
         ).forEach {
             addToPoints(it)
         }
-        invalidate()
+        postInvalidate()
     }
 
     private fun addToPoints(px: PointNode) {

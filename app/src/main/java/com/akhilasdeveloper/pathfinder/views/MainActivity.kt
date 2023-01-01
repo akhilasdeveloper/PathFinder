@@ -219,6 +219,10 @@ class MainActivity : AppCompatActivity(), NodeListClickListener {
             generateMaze.sleepVal = value.toLong()
         }
 
+        binding.closeSummary.setOnClickListener {
+            bottomSheetMessagedBehavior.toggleSheet()
+        }
+
     }
 
     private fun generateRecursiveMaze() {

@@ -22,6 +22,7 @@
     <color name="end">#07C500</color>
     <color name="path">#FFE500</color>
     <color name="visited">#D8E9A8</color>
+    <color name="splash_bg">#0c3547</color>
 
     <color name="messageColor">#88FFFFFF</color>
     <color name="cardColor">#1E1E1E</color>

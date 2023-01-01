@@ -16,5 +16,6 @@
         <item name="android:windowLightStatusBar">true</item>
         <!-- Customize your theme here. -->
         <item name="android:forceDarkAllowed">false</item>
+        <item name="android:windowBackground">@drawable/splash</item>
     </style>
 </resources>

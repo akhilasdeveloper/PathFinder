@@ -122,7 +122,7 @@ class SpanGridView(
 
     private var _textSize: Float = 12f
     private var _lineWidth: Float = 1f
-    private var _strokeWidth: Float = 5f
+    private var _strokeWidth: Float = 6f
 
     private var xOff = 0f
     private var yOff = 0f

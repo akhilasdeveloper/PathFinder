@@ -10,8 +10,6 @@ class GenerateTerrain {
     private var mListener: OnTerrainGenerateListener? = null
     var sleepVal = 0L
 
-    val perlinNoise = PerlinNoise()
-
     fun generateTerrain(startPoint: Point, gridHeight: Int, gridWidth: Int) {
         CoroutineScope(Dispatchers.Default).launch {
             var gHeight = gridHeight
@@ -48,23 +46,14 @@ class GenerateTerrain {
     private fun terrain(x1: Int, y1: Int, x2: Int, y2: Int) {
         for(x in x1..x2){
             for (y in y1..y2){
-                val noiseValue = OpenSimplex2S.noise3_ImproveXY(0,x.toFloat() * .1, y.toFloat() * .1, 0.0).map(0.0,1.0, -8, -1)
+                val noiseValue = OpenSimplex2S.noise3_ImproveXY(0,x * .05 , y * .05, 0.0).map(-1.0,1.0, -10.0, -1.0).toInt()
                 mListener?.addData(Point(x, y), noiseValue)
-                Timber.d("noiseValue : $noiseValue")
             }
         }
     }
 
-    fun Float.map(
-        startValue: Double,
-        endValue: Double,
-        mapStartValue: Int,
-        mapEndValue: Int
-    ): Int {
-        val n = endValue - startValue
-        val mapN = mapEndValue - mapStartValue
-        val factor = mapN.toFloat() / n
-        return (( mapStartValue + (startValue + this) * factor).toInt()).coerceAtLeast(mapStartValue).coerceAtMost(mapEndValue)
+    fun Number.map(fromLow: Double, fromHigh: Double, toLow: Double, toHigh: Double): Double {
+        return (this.toDouble() - fromLow) * (toHigh - toLow) / (fromHigh - fromLow) + toLow
     }
 
     fun setTerrainGenerateListener(eventListener: OnTerrainGenerateListener) {

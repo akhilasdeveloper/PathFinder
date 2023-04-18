@@ -23,11 +23,11 @@ class FindPath {
         const val STONE_NODE: Int = -7
         const val WATER_NODE: Int = -8
         const val WATER_DEEP_NODE: Int = -9
-        const val WALL_NODE: Int = -10
-        const val START_NODE: Int = -11
-        const val END_NODE: Int = -12
-        const val PATH_NODE: Int = -13
-        const val VISITED_NODE: Int = -14
+        const val WALL_NODE: Int = -100
+        const val START_NODE: Int = -110
+        const val END_NODE: Int = -120
+        const val PATH_NODE: Int = -130
+        const val VISITED_NODE: Int = -140
 
         val nodes = listOf(
             START_NODE,
@@ -201,6 +201,8 @@ class FindPath {
         pathFindListener?.onDrawPoint(point, data.color, data.fillColor)
 
     }
+
+    fun getPoint(point: Point) = gridHash[point]
 
     fun removeData(point: Point) {
         gridHash.remove(point)

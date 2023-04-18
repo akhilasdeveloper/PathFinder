@@ -106,7 +106,13 @@ class MainActivity : AppCompatActivity(), NodeListClickListener {
 
         terrain.setTerrainGenerateListener(object : GenerateTerrain.OnTerrainGenerateListener {
             override fun addData(px: Point, weight: Int) {
-                findPath.addData(px, weight)
+                if (weight == WALL_NODE){
+                    if (findPath.getPoint(px) == null){
+                        findPath.addData(px, weight)
+                    }
+                }else{
+                    findPath.addData(px, weight)
+                }
             }
         })
 

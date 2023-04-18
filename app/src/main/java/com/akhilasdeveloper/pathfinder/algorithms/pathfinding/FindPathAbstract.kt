@@ -16,10 +16,11 @@ import com.akhilasdeveloper.pathfinder.algorithms.pathfinding.FindPath.Companion
 import com.akhilasdeveloper.spangridview.models.Point
 import kotlinx.coroutines.*
 import timber.log.Timber
+import java.util.concurrent.ConcurrentHashMap
 
 class FindPathAbstract {
 
-    private var gridHash: HashMap<Point, Square> = hashMapOf()
+    private var gridHash: ConcurrentHashMap<Point, Square> = ConcurrentHashMap()
     private var heapMin: HeapMinHash<Point> = HeapMinHash()
     var startPont: Point? = null
     var endPont: Point? = null

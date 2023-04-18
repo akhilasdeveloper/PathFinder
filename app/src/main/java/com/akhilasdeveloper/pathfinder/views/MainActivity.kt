@@ -115,7 +115,7 @@ class MainActivity : AppCompatActivity(), NodeListClickListener {
 
             override fun onPathFound(type: String, summary: FindPath.PathSummary) {
                 val message =
-                    "$type: Completed in ${summary.completedTimeMillis}ms ${if (summary.totalDelayMillis > 0) "(excluding animation delay(${summary.totalDelayMillis}))" else ""}.\nVisited: ${summary.visitedNodesCount} Nodes\nPath Length: ${summary.pathNodesCount}"
+                    "$type: Completed in ${summary.completedTimeMillis - summary.totalDelayMillis}ms ${if (summary.totalDelayMillis > 0) "(excluded animation delay(${summary.totalDelayMillis}))" else ""}.\nVisited: ${summary.visitedNodesCount} Nodes\nPath Length: ${summary.pathNodesCount}"
                 setMessage(message)
                 gridCanvasView.drawEnabled = false
             }
@@ -132,8 +132,8 @@ class MainActivity : AppCompatActivity(), NodeListClickListener {
                 repopulateGrid(gridHash)
             }
 
-            override fun onClearAll() {
-                gridCanvasView.clearData()
+            override fun onClearAll(gridHash: Map<Point, FindPath.Square>) {
+                repopulateGrid(gridHash)
             }
 
         })

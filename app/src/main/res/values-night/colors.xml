@@ -11,17 +11,17 @@
     <color name="block1">#8A1188</color>
     <color name="empty">#0c3547</color>
     <color name="block">#F9F6FF</color>
-    <color name="granite">#5E5E5E</color>
-    <color name="grass">#1E5128</color>
-    <color name="sand">#957928</color>
+    <color name="granite">#69777C</color>
+    <color name="grass">#267E37</color>
+    <color name="sand">#BD9727</color>
     <color name="snow">#D1D1D1</color>
-    <color name="stone">#3E3434</color>
+    <color name="stone">#7E5F5B</color>
     <color name="water">#1877D6</color>
     <color name="water_deep">#0C4681</color>
     <color name="start">#fc5b2d</color>
     <color name="end">#07C500</color>
-    <color name="path">#FFE500</color>
-    <color name="visited">#D8E9A8</color>
+    <color name="path">#FF0000</color>
+    <color name="visited">#DBD9AB</color>
     <color name="splash_bg">#0c3547</color>
 
     <color name="messageColor">#88FFFFFF</color>

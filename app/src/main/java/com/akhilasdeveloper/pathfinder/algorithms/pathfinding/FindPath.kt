@@ -3,6 +3,7 @@ package com.akhilasdeveloper.pathfinder.algorithms.pathfinding
 import com.akhilasdeveloper.pathfinder.R
 import com.akhilasdeveloper.spangridview.models.Point
 import kotlinx.coroutines.*
+import java.util.concurrent.ConcurrentHashMap
 import kotlin.math.abs
 
 class FindPath {
@@ -57,7 +58,11 @@ class FindPath {
                 )
                 END_NODE -> Square(name = "End Node", type = END_NODE, color = R.color.end)
                 PATH_NODE -> Square(name = "Path Node", type = PATH_NODE, color = R.color.path)
-                VISITED_NODE -> Square(name = "Visited Node", type = VISITED_NODE, color = R.color.visited)
+                VISITED_NODE -> Square(
+                    name = "Visited Node",
+                    type = VISITED_NODE,
+                    color = R.color.visited
+                )
                 AIR_NODE -> Square(name = "Air Node", type = AIR_NODE, color = R.color.empty)
                 GRANITE_NODE -> Square(
                     name = "Granite Node",
@@ -71,8 +76,18 @@ class FindPath {
                     weight = 5,
                     color = R.color.grass
                 )
-                SAND_NODE -> Square(name = "Sand Node", type = SAND_NODE, weight = 7, color = R.color.sand)
-                SNOW_NODE -> Square(name = "Snow Node", type = SNOW_NODE, weight = 75, color = R.color.snow)
+                SAND_NODE -> Square(
+                    name = "Sand Node",
+                    type = SAND_NODE,
+                    weight = 7,
+                    color = R.color.sand
+                )
+                SNOW_NODE -> Square(
+                    name = "Snow Node",
+                    type = SNOW_NODE,
+                    weight = 75,
+                    color = R.color.snow
+                )
                 STONE_NODE -> Square(
                     name = "Stone Node",
                     type = STONE_NODE,
@@ -96,8 +111,8 @@ class FindPath {
         }
     }
 
-    private var gridHash: HashMap<Point, Square> = hashMapOf()
-    private var gridHashBackup: HashMap<Point, Square> = hashMapOf()
+    private var gridHash: ConcurrentHashMap<Point, Square> = ConcurrentHashMap()
+    private var gridHashBackup: ConcurrentHashMap<Point, Square> = ConcurrentHashMap()
     private var heapMin: HeapMinHash<Point> = HeapMinHash()
 
     var startPont: Point? = null
@@ -113,6 +128,9 @@ class FindPath {
 
     private var pathFindListener: OnPathFindListener? = null
 
+    private var mainJob:Job = Job()
+    private var job:Job = Job()
+
     private fun resetVars() {
         startedTimeInMillis = System.currentTimeMillis()
         visitedNodesCount = 0
@@ -124,6 +142,8 @@ class FindPath {
     fun reset() {
 
         resetVars()
+        job.cancel()
+        mainJob.cancel()
         if (gridHashBackup.isEmpty()) {
             copyGridHash()
         } else {
@@ -141,15 +161,15 @@ class FindPath {
     }
 
     fun resetAll() {
-
-
         resetVars()
+        job.cancel()
+        mainJob.cancel()
         gridHashBackup.clear()
         gridHash.clear()
         heapMin.clear()
         startPont = null
         endPont = null
-        pathFindListener?.onClearAll()
+        pathFindListener?.onClearAll(gridHash.toMap())
     }
 
     private fun restoreGridHash() {
@@ -166,7 +186,6 @@ class FindPath {
 
 
     fun addData(point: Point, type: Int) {
-        totalDelayInMillis += sleepVal
 
         val data = getData(point).copyToType(type = type)
         gridHash[point] = data
@@ -182,10 +201,12 @@ class FindPath {
 
     fun findPath(type: String) {
 
-        CoroutineScope(Dispatchers.Default).launch {
+        reset()
+
+        mainJob = CoroutineScope(Dispatchers.Default).launch {
 
             if (startPont == null || endPont == null) {
-                withContext(Dispatchers.Main){
+                withContext(Dispatchers.Main) {
                     pathFindListener?.onError("Please select start point and end point")
                 }
                 return@launch
@@ -193,14 +214,12 @@ class FindPath {
 
             var haveSolution = true
 
-            val job = launch {
+            job = launch {
                 val abstractFindPath = FindPathAbstract()
                 abstractFindPath.startPont = endPont
                 abstractFindPath.endPont = startPont
                 haveSolution = abstractFindPath.findPath(gridHash.toMap())
             }
-
-            reset()
 
             val startP = startPont!!
             val endP = endPont!!
@@ -211,109 +230,111 @@ class FindPath {
 
             while (true) {
 
-                    /** animation delay*/
-                    delay(sleepVal)
+                /** animation delay*/
+                delay(sleepVal)
+                totalDelayInMillis += sleepVal
 
-                    /**
-                     * fetch short node from heap
-                     * if the heap returns null (heap is empty) the exit the loop. All nodes are visited and destination is not reachable
-                     */
-                    val node = heapMin.pull(gridHash)
-                    if (node == null || !haveSolution) {
-                        withContext(Dispatchers.Main) {
-                            pathFindListener?.onPathNotFound(
-                                type = type,
-                            )
-                            executionCompleted = true
-                            job.cancelAndJoin()
-                        }
-                        break
+                /**
+                 * fetch short node from heap
+                 * if the heap returns null (heap is empty) the exit the loop. All nodes are visited and destination is not reachable
+                 */
+                val node = heapMin.pull(gridHash)
+                if (node == null || !haveSolution) {
+                    withContext(Dispatchers.Main) {
+                        pathFindListener?.onPathNotFound(
+                            type = type,
+                        )
+                        executionCompleted = true
+                        job.cancelAndJoin()
                     }
-                    val shortNode: Point = node
+                    break
+                }
+                val shortNode: Point = node
 
-                    /**
-                     * if short node == end node, then the destination is reached.
-                     * Now the shortest path will be drawn by traversing backward using previous value of the node
-                     * else set node as visited
-                     */
-                    if (shortNode == endP) {
-                        var n: Point = shortNode
-                        while (n != startP) {
-                            delay(sleepVal)
-                            val nodeN = gridHash[n]
-                            if (nodeN?.type != START_NODE && nodeN?.type != END_NODE) {
-                                addData(n, PATH_NODE)
-                                pathNodesCount++
-                            }
-                            n = gridHash[n]?.previous!!
+                /**
+                 * if short node == end node, then the destination is reached.
+                 * Now the shortest path will be drawn by traversing backward using previous value of the node
+                 * else set node as visited
+                 */
+                if (shortNode == endP) {
+                    var n: Point = shortNode
+                    while (n != startP) {
+                        delay(sleepVal)
+                        totalDelayInMillis += sleepVal
+                        val nodeN = gridHash[n]
+                        if (nodeN?.type != START_NODE && nodeN?.type != END_NODE) {
+                            addData(n, PATH_NODE)
+                            pathNodesCount++
                         }
-                        withContext(Dispatchers.Main) {
-                            pathFindListener?.onPathFound(
-                                type = type,
-                                PathSummary(
-                                    completedTimeMillis = (System.currentTimeMillis() - startedTimeInMillis) - totalDelayInMillis,
-                                    totalDelayMillis = totalDelayInMillis,
-                                    visitedNodesCount = visitedNodesCount,
-                                    pathNodesCount = pathNodesCount
-                                )
-                            )
-                            executionCompleted = true
-                            job.cancelAndJoin()
-                        }
-                        break
-                    } else {
-                        if (gridHash[shortNode]?.distance == Int.MAX_VALUE) break
-                        val nodeN = gridHash[shortNode]
-                        if (nodeN?.type != START_NODE) {
-                            addData(
-                                shortNode,
-                                VISITED_NODE
-                            )
-                            visitedNodesCount++
-                        }
+                        n = gridHash[n]?.previous!!
                     }
-
-                    /**
-                     * Fetch all neighbours(top, left, bottom, right) of short node
-                     */
-                    val neighbours: Array<Point> = getNeighbours(shortNode)
-
-                    /**
-                     * checking all the neighbours and comparing the distance with short distance + 1
-                     * if the distance is greater, then assign short distance + 1 to neighbours
-                     */
-                    neighbours.forEach {
-                        when (type) {
-                            DIJKSTRA_ALGORITHM -> {
-                                val dis = gridHash[shortNode]!!.distance + gridHash[it]!!.weight
-                                if (dis < gridHash[it]!!.distance) {
-                                    gridHash[it]!!.distance = dis
-                                    heapMin.push(it, gridHash)
-                                }
-                                gridHash[it]!!.previous = shortNode
-                            }
-                            ASTAR_ALGORITHM -> {
-                                val tempG = gridHash[shortNode]!!.g + gridHash[it]!!.weight
-                                gridHash[it]!!.g = tempG
-
-                                gridHash[it]!!.h = heuristic(it, endP)
-                                gridHash[it]!!.distance = gridHash[it]!!.g + gridHash[it]!!.h
-                                heapMin.push(it, gridHash)
-
-                                gridHash[it]!!.previous = shortNode
-                            }
-                            BFS_ALGORITHM -> {
-                                val dis = gridHash[shortNode]!!.distance + 1
-                                if (dis < gridHash[it]!!.distance) {
-                                    gridHash[it]!!.distance = dis
-                                    heapMin.push(it, gridHash)
-                                }
-                                gridHash[it]!!.previous = shortNode
-                            }
-                        }
-
+                    withContext(Dispatchers.Main) {
+                        pathFindListener?.onPathFound(
+                            type = type,
+                            PathSummary(
+                                completedTimeMillis = System.currentTimeMillis() - startedTimeInMillis,
+                                totalDelayMillis = totalDelayInMillis,
+                                visitedNodesCount = visitedNodesCount,
+                                pathNodesCount = pathNodesCount
+                            )
+                        )
+                        executionCompleted = true
+                        job.cancelAndJoin()
+                    }
+                    break
+                } else {
+                    if (gridHash[shortNode]?.distance == Int.MAX_VALUE) break
+                    val nodeN = gridHash[shortNode]
+                    if (nodeN?.type != START_NODE) {
+                        addData(
+                            shortNode,
+                            VISITED_NODE
+                        )
+                        visitedNodesCount++
                     }
                 }
+
+                /**
+                 * Fetch all neighbours(top, left, bottom, right) of short node
+                 */
+                val neighbours: Array<Point> = getNeighbours(shortNode)
+
+                /**
+                 * checking all the neighbours and comparing the distance with short distance + 1
+                 * if the distance is greater, then assign short distance + 1 to neighbours
+                 */
+                neighbours.forEach {
+                    when (type) {
+                        DIJKSTRA_ALGORITHM -> {
+                            val dis = gridHash[shortNode]!!.distance + gridHash[it]!!.weight
+                            if (dis < gridHash[it]!!.distance) {
+                                gridHash[it]!!.distance = dis
+                                heapMin.push(it, gridHash)
+                            }
+                            gridHash[it]!!.previous = shortNode
+                        }
+                        ASTAR_ALGORITHM -> {
+                            val tempG = gridHash[shortNode]!!.g + gridHash[it]!!.weight
+                            gridHash[it]!!.g = tempG
+
+                            gridHash[it]!!.h = heuristic(it, endP)
+                            gridHash[it]!!.distance = gridHash[it]!!.g + gridHash[it]!!.h
+                            heapMin.push(it, gridHash)
+
+                            gridHash[it]!!.previous = shortNode
+                        }
+                        BFS_ALGORITHM -> {
+                            val dis = gridHash[shortNode]!!.distance + 1
+                            if (dis < gridHash[it]!!.distance) {
+                                gridHash[it]!!.distance = dis
+                                heapMin.push(it, gridHash)
+                            }
+                            gridHash[it]!!.previous = shortNode
+                        }
+                    }
+
+                }
+            }
 
 
         }
@@ -368,7 +389,7 @@ class FindPath {
         fun onDrawPoint(px: Point, color1: Int, color2: Int)
         fun onClearPoint(px: Point)
         fun onClearResult(gridHash: Map<Point, Square>)
-        fun onClearAll()
+        fun onClearAll(gridHash: Map<Point, Square>)
     }
 
     data class PathSummary(

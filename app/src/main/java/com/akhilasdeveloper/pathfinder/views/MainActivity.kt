@@ -42,6 +42,7 @@ class MainActivity : AppCompatActivity(), NodeListClickListener {
     internal lateinit var gridCanvasView: SpanGridView
     private var findPath: FindPath = FindPath()
     private var generateMaze: GenerateMaze = GenerateMaze()
+    private var terrain: GenerateTerrain = GenerateTerrain()
 
     private lateinit var shareListAdapter: ShareRecyclerAdapter
 
@@ -101,6 +102,12 @@ class MainActivity : AppCompatActivity(), NodeListClickListener {
                 findPath.removeData(px)
             }
 
+        })
+
+        terrain.setTerrainGenerateListener(object : GenerateTerrain.OnTerrainGenerateListener {
+            override fun addData(px: Point, weight: Int) {
+                findPath.addData(px, weight)
+            }
         })
 
         findPath.setPathFindListener(object : FindPath.OnPathFindListener {
@@ -169,7 +176,7 @@ class MainActivity : AppCompatActivity(), NodeListClickListener {
                     true
                 }
                 R.id.grid -> {
-                    val items = arrayOf("Recursive")
+                    val items = arrayOf("Recursive", "Terrain")
 
                     MaterialAlertDialogBuilder(this)
                         .setTitle("Select Maze Algorithm")
@@ -187,6 +194,10 @@ class MainActivity : AppCompatActivity(), NodeListClickListener {
                                         gridCanvasView.drawEnabled = true
                                         generateRecursiveMaze()
                                     }
+                                }
+                                1 -> {
+                                    gridCanvasView.drawEnabled = true
+                                    generateTerrain()
                                 }
                             }
                         }
@@ -217,12 +228,22 @@ class MainActivity : AppCompatActivity(), NodeListClickListener {
         binding.speedSlide.addOnChangeListener { _, value, _ ->
             findPath.sleepVal = value.toLong()
             generateMaze.sleepVal = value.toLong()
+            terrain.sleepVal = value.toLong()
         }
 
         binding.closeSummary.setOnClickListener {
             bottomSheetMessagedBehavior.toggleSheet()
         }
 
+    }
+
+    private fun generateTerrain() {
+
+        val gHeight = gridCanvasView.gridHeight.toInt()
+        val gWidth = gridCanvasView.gridWidth.toInt()
+        val startPoint = gridCanvasView.startPoint
+
+        terrain.generateTerrain(startPoint, gHeight, gWidth)
     }
 
     private fun generateRecursiveMaze() {

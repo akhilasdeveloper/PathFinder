@@ -14,19 +14,20 @@ class FindPath {
         const val ASTAR_ALGORITHM = "A*"
         const val BFS_ALGORITHM = "BFS"
 
-        const val AIR_NODE: Int = -2
-        const val GRANITE_NODE: Int = -3
-        const val GRASS_NODE: Int = -4
+        const val AIR_NODE: Int = -1
+        const val GRANITE_NODE: Int = -2
+        const val GRASS_NODE: Int = -3
+        const val FOREST_NODE: Int = -4
         const val SAND_NODE: Int = -5
         const val SNOW_NODE: Int = -6
         const val STONE_NODE: Int = -7
         const val WATER_NODE: Int = -8
         const val WATER_DEEP_NODE: Int = -9
-        const val WALL_NODE: Int = -1
-        const val START_NODE: Int = -10
-        const val END_NODE: Int = -11
-        const val PATH_NODE: Int = -12
-        const val VISITED_NODE: Int = -13
+        const val WALL_NODE: Int = -10
+        const val START_NODE: Int = -11
+        const val END_NODE: Int = -12
+        const val PATH_NODE: Int = -13
+        const val VISITED_NODE: Int = -14
 
         val nodes = listOf(
             START_NODE,
@@ -35,6 +36,7 @@ class FindPath {
             AIR_NODE,
             GRANITE_NODE,
             GRASS_NODE,
+            FOREST_NODE,
             SAND_NODE,
             SNOW_NODE,
             STONE_NODE,
@@ -76,10 +78,16 @@ class FindPath {
                     weight = 5,
                     color = R.color.grass
                 )
+                FOREST_NODE -> Square(
+                    name = "Forest Node",
+                    type = GRASS_NODE,
+                    weight = 7,
+                    color = R.color.forest
+                )
                 SAND_NODE -> Square(
                     name = "Sand Node",
                     type = SAND_NODE,
-                    weight = 7,
+                    weight = 10,
                     color = R.color.sand
                 )
                 SNOW_NODE -> Square(

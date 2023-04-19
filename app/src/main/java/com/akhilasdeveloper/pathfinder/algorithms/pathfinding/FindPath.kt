@@ -80,7 +80,7 @@ class FindPath {
                 )
                 FOREST_NODE -> Square(
                     name = "Forest Node",
-                    type = GRASS_NODE,
+                    type = FOREST_NODE,
                     weight = 7,
                     color = R.color.forest
                 )

@@ -3,6 +3,7 @@ package com.akhilasdeveloper.pathfinder.algorithms.pathfinding
 import com.akhilasdeveloper.pathfinder.algorithms.pathfinding.FindPath.*
 import com.akhilasdeveloper.pathfinder.algorithms.pathfinding.FindPath.Companion.AIR_NODE
 import com.akhilasdeveloper.pathfinder.algorithms.pathfinding.FindPath.Companion.END_NODE
+import com.akhilasdeveloper.pathfinder.algorithms.pathfinding.FindPath.Companion.FOREST_NODE
 import com.akhilasdeveloper.pathfinder.algorithms.pathfinding.FindPath.Companion.GRANITE_NODE
 import com.akhilasdeveloper.pathfinder.algorithms.pathfinding.FindPath.Companion.GRASS_NODE
 import com.akhilasdeveloper.pathfinder.algorithms.pathfinding.FindPath.Companion.SAND_NODE
@@ -113,6 +114,7 @@ class FindPathAbstract {
                 data.type == AIR_NODE ||
                 data.type == GRANITE_NODE ||
                 data.type == GRASS_NODE ||
+                data.type == FOREST_NODE ||
                 data.type == SAND_NODE ||
                 data.type == SNOW_NODE ||
                 data.type == STONE_NODE ||

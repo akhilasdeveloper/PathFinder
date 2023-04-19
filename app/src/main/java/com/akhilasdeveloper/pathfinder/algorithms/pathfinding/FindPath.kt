@@ -372,6 +372,7 @@ class FindPath {
                 data.type == AIR_NODE ||
                 data.type == GRANITE_NODE ||
                 data.type == GRASS_NODE ||
+                data.type == FOREST_NODE ||
                 data.type == SAND_NODE ||
                 data.type == SNOW_NODE ||
                 data.type == STONE_NODE ||

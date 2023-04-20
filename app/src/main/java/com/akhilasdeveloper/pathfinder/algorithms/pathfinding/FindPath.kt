@@ -195,10 +195,12 @@ class FindPath {
 
     fun addData(point: Point, type: Int) {
 
-        val data = getData(point).copyToType(type = type)
-        gridHash[point] = data
+        val data = getData(point)
+        val data2 = data.copyToType(type = type)
+        data2.name2 = data.name
+        gridHash[point] = data2
 
-        pathFindListener?.onDrawPoint(point, data.color, data.fillColor)
+        pathFindListener?.onDrawPoint(point, data2.color, data2.fillColor)
 
     }
 
@@ -412,6 +414,7 @@ class FindPath {
 
     data class Square(
         var name: String,
+        var name2: String? = null,
         var type: Int,
         var distance: Int = Int.MAX_VALUE,
         var weight: Int = 1,

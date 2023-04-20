@@ -29,6 +29,7 @@ import com.akhilasdeveloper.spangridview.SpanGridView.Companion.MODE_DRAW
 import com.akhilasdeveloper.spangridview.models.Point
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import kotlinx.android.synthetic.main.layout_info_bottom_sheet.view.*
 
 class MainActivity : AppCompatActivity(), NodeListClickListener {
 
@@ -38,6 +39,7 @@ class MainActivity : AppCompatActivity(), NodeListClickListener {
     private lateinit var bottomSheetBehavior: BottomSheetBehavior<LinearLayout>
     private lateinit var bottomSheetSettingsBehavior: BottomSheetBehavior<LinearLayout>
     private lateinit var bottomSheetMessagedBehavior: BottomSheetBehavior<NestedScrollView>
+    private lateinit var bottomSheetInfoBehavior: BottomSheetBehavior<NestedScrollView>
 
     internal lateinit var gridCanvasView: SpanGridView
     private var findPath: FindPath = FindPath()
@@ -91,7 +93,33 @@ class MainActivity : AppCompatActivity(), NodeListClickListener {
                     )
                 }
             }
+
+            override fun onSelected(px: Point) {
+                bottomSheetInfoBehavior.state = BottomSheetBehavior.STATE_EXPANDED
+                findPath.getPoint(px)?.let {
+                    binding.bottomSheetInfo.name.text = it.name
+                    it.name2?.let {str->
+                        binding.bottomSheetInfo.name2.text = str
+                    }
+                }
+            }
         })
+
+        bottomSheetInfoBehavior.addBottomSheetCallback(object : BottomSheetBehavior.BottomSheetCallback(){
+            override fun onStateChanged(bottomSheet: View, newState: Int) {
+                if (newState == BottomSheetBehavior.STATE_HIDDEN || newState == BottomSheetBehavior.STATE_COLLAPSED){
+                    binding.gridViewHolder.unSelect()
+                }
+            }
+
+            override fun onSlide(bottomSheet: View, slideOffset: Float) {
+
+            }
+        })
+
+        binding.bottomSheetInfo.close.setOnClickListener {
+            bottomSheetInfoBehavior.toggleSheet()
+        }
 
         generateMaze.setMazeGenerateListener(object : GenerateMaze.OnMazeGenerateListener {
             override fun addData(px: Point) {
@@ -301,6 +329,7 @@ class MainActivity : AppCompatActivity(), NodeListClickListener {
         bottomSheetBehavior = BottomSheetBehavior.from(binding.bottomSheet)
         bottomSheetSettingsBehavior = BottomSheetBehavior.from(binding.bottomSheetSettings)
         bottomSheetMessagedBehavior = BottomSheetBehavior.from(binding.bottomSheetMessage)
+        bottomSheetInfoBehavior = BottomSheetBehavior.from(binding.bottomSheetInfo)
         gridCanvasView = binding.gridViewHolder
         gridCanvasView.brushSize = brushSize
         gridCanvasView.post {

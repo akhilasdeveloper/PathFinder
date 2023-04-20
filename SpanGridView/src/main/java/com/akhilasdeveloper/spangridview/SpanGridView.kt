@@ -2,6 +2,7 @@ package com.akhilasdeveloper.spangridview
 
 import android.content.Context
 import android.graphics.Canvas
+import android.graphics.Color
 import android.graphics.Paint
 import android.util.AttributeSet
 import android.view.GestureDetector
@@ -45,11 +46,39 @@ class SpanGridView(
         init(null)
     }
 
-    companion object{
+    companion object {
         const val MODE_VIEW: Int = -2
         const val MODE_DRAW: Int = -3
     }
 
+    private var selectedPoint: Point? = null
+        set(value) {
+            field = value
+            if (value == null) {
+                selectedPointOnScreen = null
+                postInvalidate()
+            }else{
+                val xs = getViewFactor(value.x + xOff) + (_lineWidth / 2)
+                val ys = getViewFactor(value.y + yOff) + (_lineWidth / 2)
+                val stroke = Color.RED
+
+                mListener?.onSelected(value)
+
+                selectedPointOnScreen = Node(
+                    x = value.x,
+                    y = value.y,
+                    x1 = xs,
+                    y1 = ys,
+                    x2 = xs + resolution,
+                    y2 = ys + resolution,
+                    fill = stroke,
+                    stroke = stroke
+                )
+
+                postInvalidate()
+            }
+        }
+    private var selectedPointOnScreen: Node? = null
     private val minDistanceMoved = 50
     private val friction = 1.1f
 
@@ -211,6 +240,10 @@ class SpanGridView(
         resolution = (scaleLimitEnd - scaleLimitStart) * scale
     }
 
+    fun unSelect(){
+        selectedPoint = null
+    }
+
     private val mGestureListener = object : GestureDetector.SimpleOnGestureListener() {
         override fun onScroll(
             e1: MotionEvent,
@@ -225,6 +258,16 @@ class SpanGridView(
                 yFling.setValue(this@SpanGridView, (yOff - distanceY * fact) / fact)
 
             }
+            return true
+        }
+
+        override fun onSingleTapUp(event: MotionEvent): Boolean {
+
+            if (mode == MODE_VIEW) {
+                val pxF = PointF(event.x, event.y)
+                selectedPoint = getPixelDetails(pxF)
+            }
+
             return true
         }
 
@@ -426,6 +469,24 @@ class SpanGridView(
         ).forEach {
             addToPoints(it)
         }
+
+        selectedPoint?.let {px->
+            val xs = getViewFactor(px.x + xOff) + (_lineWidth / 2)
+            val ys = getViewFactor(px.y + yOff) + (_lineWidth / 2)
+            val stroke = Color.RED
+
+            selectedPointOnScreen = Node(
+                x = px.x,
+                y = px.y,
+                x1 = xs,
+                y1 = ys,
+                x2 = xs + resolution,
+                y2 = ys + resolution,
+                fill = stroke,
+                stroke = stroke
+            )
+        }
+
         postInvalidate()
     }
 
@@ -538,7 +599,13 @@ class SpanGridView(
                     paint
                 )
             }
+        }
 
+        selectedPointOnScreen?.let {px->
+            paint.color = px.fill
+            paint.style = Paint.Style.STROKE
+            paint.strokeWidth = _lineWidth * 5
+            this.drawRect(px.x1, px.y1, px.x2, px.y2, paint)
         }
     }
 
@@ -557,6 +624,8 @@ class SpanGridView(
     interface OnGridSelectListener {
         fun onDraw(px: Point)
         fun onModeChange(mode: Int)
+        fun onSelected(px: Point)
+
     }
 }
 

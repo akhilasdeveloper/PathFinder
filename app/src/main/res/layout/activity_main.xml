@@ -151,6 +151,24 @@
 
     </LinearLayout>
 
+    <androidx.core.widget.NestedScrollView
+        android:id="@+id/bottom_sheet_info"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@android:color/transparent"
+        android:orientation="vertical"
+        android:paddingBottom="56dp"
+        app:behavior_hideable="true"
+        app:behavior_peekHeight="0dp"
+        app:layout_behavior="com.google.android.material.bottomsheet.BottomSheetBehavior">
+
+        <include
+            android:id="@+id/layout_info_bottom_sheet"
+            layout="@layout/layout_info_bottom_sheet"
+            />
+
+    </androidx.core.widget.NestedScrollView>
+
     <com.google.android.material.bottomappbar.BottomAppBar
         android:id="@+id/bottomAppBar"
         android:layout_width="match_parent"
